@@ -1,0 +1,239 @@
+{% extends "base.html" %}
+
+{% block title %}
+  {% if mode == 'letters' %}Letter Drills
+  {% elif mode == 'syllables' %}Syllable Blending
+  {% elif mode == 'phrases' %}Phrase Flow
+  {% elif mode == 'prayer' %}Prayer Simulation
+  {% elif mode == 'consonants' %}Rapid-Fire Consonants
+  {% elif mode == 'siddur' %}Siddur Reading
+  {% endif %} — Hebrew Trainer
+{% endblock %}
+
+{% block content %}
+<div class="space-y-5">
+
+  <!-- Header -->
+  <div class="flex items-center gap-3 flex-wrap">
+    <a href="/" class="text-gray-600 hover:text-gray-300 transition-colors">‹</a>
+    <h1 class="text-xl font-semibold text-gray-100">
+      {% if mode == 'letters' %}Letter + Vowel Drills
+      {% elif mode == 'syllables' %}Syllable Blending
+      {% elif mode == 'phrases' %}Phrase Flow
+      {% elif mode == 'prayer' %}Prayer Simulation
+      {% elif mode == 'consonants' %}Rapid-Fire Consonants
+      {% elif mode == 'siddur' %}Siddur Reading
+      {% endif %}
+    </h1>
+    <span class="text-xs px-2.5 py-1 rounded-full font-medium
+      {% if mode == 'letters' %}bg-indigo-900/60 text-indigo-400
+      {% elif mode == 'syllables' %}bg-violet-900/60 text-violet-400
+      {% elif mode == 'phrases' %}bg-sky-900/60 text-sky-400
+      {% elif mode == 'consonants' %}bg-rose-900/60 text-rose-400
+      {% elif mode == 'siddur' %}bg-teal-900/60 text-teal-400
+      {% else %}bg-amber-900/60 text-amber-400{% endif %}">
+      {% if mode == 'siddur' %}Timer only{% else %}{{ content | length }} items{% endif %}
+    </span>
+    <span class="text-xs px-2.5 py-1 rounded-full font-medium bg-gray-800/80 text-gray-500 border border-gray-700/50">
+      ⏱ {{ recommended_time }}
+    </span>
+    <button id="font-toggle-btn" onclick="toggleFont()"
+            class="text-xs px-2.5 py-1 rounded-full font-medium bg-gray-800/80 text-gray-500 border border-gray-700/50 hover:text-gray-300 hover:border-gray-600 transition-colors"
+            title="Switch Hebrew font style">
+      Aa
+    </button>
+  </div>
+
+  <!-- Timer card -->
+  <div class="bg-gray-900 rounded-2xl border border-gray-800 p-6">
+    <div id="timer-display"
+         class="timer-display text-6xl font-mono font-bold text-center text-gray-100 mb-6 tracking-widest">
+      00:00
+    </div>
+
+    <div class="flex flex-wrap gap-3 justify-center">
+      <button id="start-btn"
+              class="px-7 py-2.5 bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700
+                     text-white font-medium rounded-xl transition-colors">
+        Start
+      </button>
+      <button id="pause-btn"
+              class="hidden px-7 py-2.5 bg-gray-700 hover:bg-gray-600
+                     text-white font-medium rounded-xl transition-colors">
+        Pause
+      </button>
+      <button id="record-btn"
+              class="px-5 py-2.5 bg-gray-800 hover:bg-gray-700 border border-gray-700
+                     text-gray-400 text-sm font-medium rounded-xl transition-colors"
+              title="Record this session">
+        &#127908; Record
+      </button>
+      <button id="complete-btn"
+              class="px-7 py-2.5 bg-emerald-700 hover:bg-emerald-600 active:bg-emerald-800
+                     disabled:opacity-35 disabled:cursor-not-allowed
+                     text-white font-medium rounded-xl transition-colors"
+              disabled>
+        Complete Session
+      </button>
+    </div>
+
+    <!-- Recording indicator -->
+    <div id="recording-indicator" class="hidden flex items-center justify-center gap-2 mt-3">
+      <span class="inline-block w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse"></span>
+      <span class="text-xs text-red-400 font-medium">Recording in progress</span>
+    </div>
+
+    <p id="session-status"
+       class="hidden mt-4 text-center text-emerald-400 text-sm font-medium"></p>
+  </div>
+
+  {% if mode == 'siddur' %}
+  <!-- Siddur: timer-only instructions -->
+  <div class="bg-gray-900 rounded-2xl border border-gray-800 p-6 space-y-5">
+    <div class="text-center">
+      <div class="text-6xl mb-4">📖</div>
+      <h2 class="text-xl font-semibold text-gray-100">Open Your Siddur</h2>
+      <p class="text-gray-500 text-sm mt-2">Eyes and mouth. Keep moving.</p>
+    </div>
+    <div class="space-y-2 text-sm">
+      <div class="bg-gray-800/60 rounded-xl px-4 py-3 flex items-start gap-3">
+        <span class="text-teal-400 font-bold shrink-0">1.</span>
+        <span class="text-gray-300">Open to your practice passage — Shema, Ashrei, Amidah, or wherever you are in the plan.</span>
+      </div>
+      <div class="bg-gray-800/60 rounded-xl px-4 py-3 flex items-start gap-3">
+        <span class="text-teal-400 font-bold shrink-0">2.</span>
+        <span class="text-gray-300">Press <strong class="text-gray-100">Start</strong> then read aloud continuously — no pausing to translate.</span>
+      </div>
+      <div class="bg-gray-800/60 rounded-xl px-4 py-3 flex items-start gap-3">
+        <span class="text-teal-400 font-bold shrink-0">3.</span>
+        <span class="text-gray-300">Push through hesitations. Flow over perfection — keep rhythm.</span>
+      </div>
+      <div class="bg-gray-800/60 rounded-xl px-4 py-3 flex items-start gap-3">
+        <span class="text-teal-400 font-bold shrink-0">4.</span>
+        <span class="text-gray-300">When done, press <strong class="text-gray-100">Complete Session</strong> to log your time.</span>
+      </div>
+    </div>
+    <p class="text-xs text-gray-600 text-center italic border-t border-gray-800 pt-4">
+      💡 Aim for at least 5 minutes of continuous reading per session.
+    </p>
+  </div>
+
+  <!-- Siddur hint -->
+  <p class="text-center text-xs text-gray-700">
+    Open your siddur. Press <span class="text-gray-500">Start</span>, read continuously,
+    then <span class="text-gray-500">Complete</span> to save.
+  </p>
+
+  {% else %}
+  <!-- Drill content card -->
+  <div class="bg-gray-900 rounded-2xl border border-gray-800 overflow-hidden">
+
+    <!-- Navigation bar -->
+    <div class="flex items-center justify-between px-4 py-3 border-b border-gray-800">
+      <button id="prev-btn"
+              class="px-3 py-1.5 bg-gray-800 hover:bg-gray-700
+                     disabled:opacity-30 disabled:cursor-not-allowed
+                     text-gray-300 text-sm rounded-lg transition-colors">
+        ‹ Prev
+      </button>
+
+      <div class="flex items-center gap-2">
+        <span id="item-counter" class="text-sm text-gray-500 tabular-nums">
+          1 / {{ content | length }}
+        </span>
+        <button id="shuffle-btn"
+                class="px-3 py-1.5 bg-gray-800 hover:bg-gray-700
+                       text-gray-400 text-sm rounded-lg transition-colors"
+                title="Shuffle order">
+          ⇄
+        </button>
+        {% if mode == 'letters' %}
+        <button id="vowel-scramble-btn"
+                class="px-3 py-1.5 bg-gray-800 hover:bg-gray-700 border border-gray-700
+                       text-gray-400 text-sm rounded-lg transition-colors"
+                title="Scramble vowel order">
+          🔀 Vowels
+        </button>
+        <button id="vowel-guide-btn"
+                class="px-3 py-1.5 bg-gray-800 hover:bg-gray-700 border border-gray-700
+                       text-gray-400 text-sm rounded-lg transition-colors"
+                title="Show vowel quick reference">
+          📋 Guide
+        </button>
+        {% endif %}
+      </div>
+
+      <button id="next-btn"
+              class="px-3 py-1.5 bg-gray-800 hover:bg-gray-700
+                     disabled:opacity-30 disabled:cursor-not-allowed
+                     text-gray-300 text-sm rounded-lg transition-colors">
+        Next ›
+      </button>
+    </div>
+
+    <!-- Vowel guide panel (letters mode only, hidden by default) -->
+    {% if mode == 'letters' %}
+    <div id="vowel-guide-panel" class="hidden border-b border-gray-800 bg-gray-950/60 p-4">
+      <p class="text-xs text-gray-500 font-medium text-center mb-3 uppercase tracking-wider">Vowel Quick Reference</p>
+      <div class="grid grid-cols-4 sm:grid-cols-6 gap-2" dir="ltr">
+        {% for symbol, name, sound, heb_example, eng_example in vowels %}
+        <div class="bg-gray-800 rounded-lg p-2 text-center">
+          <div class="text-3xl font-hebrew text-indigo-300 leading-tight mb-1">{{ symbol }}</div>
+          <div class="text-xs text-gray-300 font-medium leading-tight">{{ sound }}</div>
+          <div class="text-xs text-gray-600 leading-tight italic">{{ eng_example }}</div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Items container -->
+    <div id="drill-items-container" class="drill-content">
+      {% for item in content %}
+      <div class="drill-item hidden" data-original="{{ item }}">
+        <div class="hebrew-text font-hebrew
+                    text-center text-gray-100 py-10 px-6
+                    min-h-52 flex items-center justify-center
+                    {% if mode == 'consonants' %}text-8xl sm:text-9xl{% else %}text-5xl sm:text-6xl{% endif %}">
+          {{ item }}
+        </div>
+      </div>
+      {% else %}
+      <div class="text-center py-16 text-gray-600 text-sm">
+        No content available for this drill mode.
+      </div>
+      {% endfor %}
+    </div>
+
+    <!-- Transliteration box (shows previous item's answer) -->
+    <div id="translit-box" class="hidden border-t border-gray-800 bg-gray-950/40 px-6 py-4 text-center">
+      <p class="text-xs text-gray-600 uppercase tracking-widest mb-2">Previous item</p>
+      <p id="translit-prev-hebrew" class="font-hebrew text-2xl text-gray-500 mb-1.5" dir="rtl"></p>
+      <p id="translit-text" class="text-base text-gray-400 tracking-wide leading-relaxed"
+         dir="ltr" style="font-style: italic;"></p>
+    </div>
+
+  </div>
+
+  <!-- Hint -->
+  <p class="text-center text-xs text-gray-700">
+    Press <span class="text-gray-500">Start</span> when ready.
+    Navigate items, then <span class="text-gray-500">Complete</span> to save your session.
+    {% if mode == 'letters' %}<br class="mt-1">
+    Use <span class="text-gray-500">🔀 Vowels</span> to drill vowels in random order.
+    {% elif mode in ['syllables', 'phrases', 'prayer', 'consonants'] %}<br class="mt-1">
+    <span class="text-gray-600">Items shuffle randomly on load. Use ⇄ to re-shuffle.</span>
+    {% endif %}
+  </p>
+  {% endif %}
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    initDrill('{{ mode }}');
+  });
+</script>
+{% endblock %}

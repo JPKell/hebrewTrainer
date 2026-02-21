@@ -1,0 +1,500 @@
+'use strict';
+
+// ── Timer state ───────────────────────────────────────────────────────────────
+let timerInterval   = null;
+let totalSeconds    = 0;
+let isRunning       = false;
+let currentMode     = '';
+let sessionSaved    = false;
+let vowelScramble     = false;
+let vowelGuideVisible = false;
+
+// ── Recording state ──────────────────────────────────────────────────────────────────────────────
+let mediaRecorder  = null;
+let audioChunks    = [];
+let isRecording    = false;
+let recordingBlob  = null;
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function formatTime(s) {
+  return String(Math.floor(s / 60)).padStart(2, '0') + ':' +
+         String(s % 60).padStart(2, '0');
+}
+
+function updateDisplay() {
+  const el = document.getElementById('timer-display');
+  if (el) el.textContent = formatTime(totalSeconds);
+}
+
+function el(id) { return document.getElementById(id); }
+
+// ── Timer controls ────────────────────────────────────────────────────────────
+function startTimer() {
+  if (isRunning) return;
+  isRunning = true;
+
+  el('start-btn')?.classList.add('hidden');
+  el('pause-btn')?.classList.remove('hidden');
+  el('timer-display')?.classList.add('timer-active');
+
+  const completeBtn = el('complete-btn');
+  if (completeBtn) completeBtn.disabled = false;
+
+  timerInterval = setInterval(() => {
+    totalSeconds++;
+    updateDisplay();
+  }, 1000);
+}
+
+function pauseTimer() {
+  if (!isRunning) return;
+  isRunning = false;
+
+  clearInterval(timerInterval);
+  timerInterval = null;
+
+  el('timer-display')?.classList.remove('timer-active');
+  el('pause-btn')?.classList.add('hidden');
+
+  const startBtn = el('start-btn');
+  if (startBtn) {
+    startBtn.textContent = 'Resume';
+    startBtn.classList.remove('hidden');
+  }
+}
+
+// ── Session completion ────────────────────────────────────────────────────────
+async function completeSession() {
+  if (sessionSaved) return;
+  sessionSaved = true;
+
+  // Reveal the current item's answer in the translit box on session end
+  const allItems = document.querySelectorAll('.drill-item');
+  if (allItems.length && allItems[currentIndex]) {
+    const label = el('translit-box')?.querySelector('p');
+    if (label) label.textContent = 'Current item';
+    updateTranslitBox(allItems[currentIndex].dataset.original || '');
+  }
+
+  // Stop mic and wait a tick for the final chunk to be assembled
+  if (isRecording) {
+    stopRecording();
+    await new Promise(resolve => setTimeout(resolve, 400));
+  }
+
+  if (isRunning) { clearInterval(timerInterval); isRunning = false; }
+  el('timer-display')?.classList.remove('timer-active');
+  el('pause-btn')?.classList.add('hidden');
+  el('start-btn')?.classList.add('hidden');
+
+  const minutes = Math.max(1, Math.round(totalSeconds / 60));
+  const completeBtn = el('complete-btn');
+  if (completeBtn) { completeBtn.disabled = true; completeBtn.textContent = 'Saving…'; }
+
+  try {
+    const res = await fetch('/complete', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ mode: currentMode, minutes }),
+    });
+    const data = await res.json();
+
+    if (data.success) {
+      if (recordingBlob && data.session_id) {
+        if (completeBtn) completeBtn.textContent = 'Uploading recording…';
+        const form = new FormData();
+        form.append('audio', recordingBlob, `session_${data.session_id}.webm`);
+        await fetch(`/upload_recording/${data.session_id}`, { method: 'POST', body: form });
+      }
+      const statusEl = el('session-status');
+      if (statusEl) {
+        statusEl.textContent =
+          `✓ ${minutes} minute${minutes !== 1 ? 's' : ''} saved.` +
+          (recordingBlob ? ' Recording uploaded.' : '') +
+          ' Redirecting…';
+        statusEl.classList.remove('hidden');
+      }
+      setTimeout(() => { window.location.href = data.redirect || '/'; }, 1400);
+    }
+  } catch (err) {
+    console.error('Save error:', err);
+    sessionSaved = false;
+    if (completeBtn) { completeBtn.disabled = false; completeBtn.textContent = 'Complete Session'; }
+    alert('Could not save session. Please try again.');
+  }
+}
+
+// ── Drill navigation ──────────────────────────────────────────────────────────
+let currentIndex = 0;
+
+function updateTranslitBox(hebrewText) {
+  const tBox = el('translit-box');
+  const tTxt = el('translit-text');
+  const tHeb = el('translit-prev-hebrew');
+  if (!tBox) return;
+  if (!hebrewText || !hebrewText.trim()) { tBox.classList.add('hidden'); return; }
+  const translit = transliterate(hebrewText.trim());
+  const hasContent = translit.replace(/[\u2019\s]/g, '').length > 0;
+  if (!hasContent) { tBox.classList.add('hidden'); return; }
+  if (tHeb) tHeb.textContent = hebrewText.trim();
+  if (tTxt) tTxt.textContent = translit;
+  tBox.classList.remove('hidden');
+}
+
+function showItem(index) {
+  const items = document.querySelectorAll('.drill-item');
+  if (!items.length) return;
+  hideVowelGuide();
+
+  // Capture whichever item is currently visible — its answer will appear in the translit box
+  const visibleItem = Array.from(items).find(item => !item.classList.contains('hidden'));
+  const prevText = visibleItem ? (visibleItem.dataset.original || '') : null;
+
+  items.forEach(item => item.classList.add('hidden'));
+
+  // Wrap around — endless mode
+  currentIndex = ((index % items.length) + items.length) % items.length;
+  items[currentIndex].classList.remove('hidden');
+
+  if (el('prev-btn'))     el('prev-btn').disabled  = false;
+  if (el('next-btn'))     el('next-btn').disabled  = false;
+  if (el('item-counter')) el('item-counter').textContent = `${currentIndex + 1} / ${items.length}`;
+  renderItemContent(currentIndex);
+  updateTranslitBox(prevText);
+}
+
+function nextItem() {
+  const items = document.querySelectorAll('.drill-item');
+  if (!items.length) return;
+  if (currentIndex >= items.length - 1) {
+    shuffleItems(); // re-shuffle and restart from item 1
+  } else {
+    showItem(currentIndex + 1);
+  }
+}
+
+function prevItem() { showItem(currentIndex - 1); }
+
+function shuffleItems() {
+  const container = el('drill-items-container');
+  if (!container) return;
+
+  const items = Array.from(container.querySelectorAll('.drill-item'));
+
+  // Fisher-Yates
+  for (let i = items.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [items[i], items[j]] = [items[j], items[i]];
+  }
+  items.forEach(item => container.appendChild(item));
+
+  currentIndex = 0;
+  showItem(0);
+}
+
+// ── Vowel scramble ────────────────────────────────────────────────────────────
+// ── Transliteration ──────────────────────────────────────────────────────────
+function transliterate(text) {
+  const DAGESH   = '\u05BC';
+  const SHIN_DOT = '\u05C1';
+  const SIN_DOT  = '\u05C2';
+
+  // Base consonant values (soft / fricative defaults)
+  const C = {
+    '\u05D0': '',    // א  aleph (silent)
+    '\u05D1': 'v',   // ב  bet soft
+    '\u05D2': 'g',   // ג  gimel
+    '\u05D3': 'd',   // ד  dalet
+    '\u05D4': 'h',   // ה  he
+    '\u05D5': 'v',   // ו  vav (consonant form)
+    '\u05D6': 'z',   // ז  zayin
+    '\u05D7': 'ch',  // ח  chet
+    '\u05D8': 't',   // ט  tet
+    '\u05D9': 'y',   // י  yod
+    '\u05DA': 'ch',  // ך  final kaf soft
+    '\u05DB': 'ch',  // כ  kaf soft
+    '\u05DC': 'l',   // ל  lamed
+    '\u05DD': 'm',   // ם  final mem
+    '\u05DE': 'm',   // מ  mem
+    '\u05DF': 'n',   // ן  final nun
+    '\u05E0': 'n',   // נ  nun
+    '\u05E1': 's',   // ס  samekh
+    '\u05E2': '',    // ע  ayin (silent/guttural)
+    '\u05E3': 'f',   // ף  final pe soft
+    '\u05E4': 'f',   // פ  pe soft
+    '\u05E5': 'tz',  // ץ  final tsadi
+    '\u05E6': 'tz',  // צ  tsadi
+    '\u05E7': 'k',   // ק  qof
+    '\u05E8': 'r',   // ר  resh
+    '\u05E9': 'sh',  // ש  shin (sin dot → 's')
+    '\u05EA': 't',   // ת  tav
+  };
+
+  // Dagesh lene makes bet→b, kaf→k, pe→p
+  const C_HARD = {
+    '\u05D1': 'b',   // ב + dagesh
+    '\u05DA': 'k',   // ך + dagesh
+    '\u05DB': 'k',   // כ + dagesh
+    '\u05E3': 'p',   // ף + dagesh
+    '\u05E4': 'p',   // פ + dagesh
+  };
+
+  // Vowel diacritics (niqqud)
+  const V = {
+    '\u05B7': 'a',      // patah
+    '\u05B8': 'a',      // qamatz
+    '\u05B5': 'e',      // tsere
+    '\u05B6': 'e',      // segol
+    '\u05B4': 'i',      // hirik
+    '\u05B9': 'o',      // holam
+    '\u05BA': 'o',      // holam male
+    '\u05BB': 'u',      // qibbuts
+    '\u05B0': '\u2019', // shva  → ‘
+    '\u05B1': 'e',      // hataf segol
+    '\u05B2': 'a',      // hataf patah
+    '\u05B3': 'o',      // hataf qamatz
+  };
+
+  const chars = [...text]; // spread by Unicode code point
+  const out = [];
+  let i = 0;
+
+  while (i < chars.length) {
+    const ch = chars[i];
+    const cp = ch.codePointAt(0);
+
+    // Pass through ASCII, spaces, box-drawing separators
+    if (cp < 0x05B0) { out.push(ch === '\n' ? ' ' : ch); i++; continue; }
+
+    // Skip orphaned combining marks
+    if (cp <= 0x05C7) { i++; continue; }
+
+    // Hebrew consonants U+05D0–U+05EA
+    if (cp >= 0x05D0 && cp <= 0x05EA) {
+      let hasDagesh = false, hasShinDot = false, hasSinDot = false, vowel = '';
+      let j = i + 1;
+
+      // Collect all combining diacritics immediately following
+      while (j < chars.length) {
+        const nc = chars[j];
+        const ncp = nc.codePointAt(0);
+        if (ncp >= 0x05B0 && ncp <= 0x05C7) {
+          if      (nc === DAGESH)   hasDagesh  = true;
+          else if (nc === SHIN_DOT) hasShinDot = true;
+          else if (nc === SIN_DOT)  hasSinDot  = true;
+          else if (V[nc] && !vowel) vowel      = V[nc];
+          j++;
+        } else break;
+      }
+
+      // Vav as mater lectionis
+      if (ch === '\u05D5') {
+        if (hasDagesh && !vowel) { out.push('u'); i = j; continue; } // shuruk וּ
+        if (vowel === 'o')       { out.push('o'); i = j; continue; } // holam male וֹ
+      }
+
+      // Resolve consonant
+      const cons = ch === '\u05E9'
+        ? (hasSinDot ? 's' : 'sh')
+        : (hasDagesh && C_HARD[ch]) ? C_HARD[ch] : (C[ch] ?? '');
+
+      out.push(cons, vowel);
+      i = j;
+      continue;
+    }
+
+    i++;
+  }
+
+  return out.join('')
+    .replace(/\u2019\s/g, ' ')  // shva before space → space
+    .replace(/\u2019$/,   '')    // trailing shva → nothing
+    .replace(/\s+/g,      ' ')
+    .trim();
+}
+
+function renderItemContent(index) {
+  const items = document.querySelectorAll('.drill-item');
+  if (!items.length || index < 0 || index >= items.length) return;
+  const textEl = items[index].querySelector('.hebrew-text');
+  if (!textEl) return;
+  const original = items[index].dataset.original || textEl.textContent.trim();
+  if (vowelScramble && currentMode === 'letters') {
+    const tokens = original.split(' ').filter(t => t.length > 0);
+    for (let i = tokens.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [tokens[i], tokens[j]] = [tokens[j], tokens[i]];
+    }
+    textEl.textContent = tokens.join(' ');
+  } else {
+    textEl.textContent = original;
+  }
+}
+
+function toggleVowelScramble() {
+  vowelScramble = !vowelScramble;
+  const btn = el('vowel-scramble-btn');
+  if (btn) {
+    btn.classList.toggle('bg-indigo-700',  vowelScramble);
+    btn.classList.toggle('text-white',     vowelScramble);
+    btn.classList.toggle('border-indigo-500', vowelScramble);
+    btn.classList.toggle('bg-gray-800',    !vowelScramble);
+    btn.classList.toggle('text-gray-400',  !vowelScramble);
+    btn.classList.toggle('border-gray-700', !vowelScramble);
+    btn.title = vowelScramble ? 'Vowel scramble ON — click to disable' : 'Scramble vowel order';
+  }
+  renderItemContent(currentIndex);
+}
+
+// ── Public init (called from drill.html inline script) ───────────────────────
+
+// ── Recording ────────────────────────────────────────────────────────────────
+async function startRecording() {
+  try {
+    // Mono 16 kHz speech — minimises file size while keeping voice intelligible
+    const stream = await navigator.mediaDevices.getUserMedia({
+      audio: { channelCount: 1, sampleRate: 16000, echoCancellation: true, noiseSuppression: true },
+      video: false
+    });
+    audioChunks  = [];
+    recordingBlob = null;
+    // Prefer opus; fall back to plain webm. 32 kbps ≈ 240 KB/min
+    const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
+      ? 'audio/webm;codecs=opus' : 'audio/webm';
+    mediaRecorder = new MediaRecorder(stream, { mimeType, audioBitsPerSecond: 32000 });
+    mediaRecorder.addEventListener('dataavailable', e => {
+      if (e.data.size > 0) audioChunks.push(e.data);
+    });
+    mediaRecorder.addEventListener('stop', () => {
+      recordingBlob = new Blob(audioChunks, { type: mimeType });
+      stream.getTracks().forEach(t => t.stop());
+    });
+    mediaRecorder.start(500);
+    isRecording = true;
+    const btn = el('record-btn');
+    if (btn) {
+      btn.innerHTML = '⏺ Recording';
+      btn.classList.remove('bg-gray-800', 'text-gray-400', 'border-gray-700');
+      btn.classList.add('bg-red-900', 'text-red-300', 'border-red-700');
+      btn.title = 'Recording — click to stop';
+    }
+    el('recording-indicator')?.classList.remove('hidden');
+  } catch (err) {
+    console.error('Mic error:', err);
+    sessionSaved = false;
+    alert('Microphone access is required to record. Please allow mic access and try again.');
+  }
+}
+
+function stopRecording() {
+  if (mediaRecorder && mediaRecorder.state !== 'inactive') mediaRecorder.stop();
+  isRecording = false;
+  const btn = el('record-btn');
+  if (btn) {
+    btn.innerHTML = '🎤 Record';
+    btn.classList.remove('bg-red-900', 'text-red-300', 'border-red-700');
+    btn.classList.add('bg-gray-800', 'text-gray-400', 'border-gray-700');
+    btn.title = 'Record this session';
+  }
+  el('recording-indicator')?.classList.add('hidden');
+}
+
+function toggleRecording() {
+  if (isRecording) stopRecording();
+  else startRecording();
+}
+
+// Font toggle
+function toggleFont() {
+  const html = document.documentElement;
+  const isModern = html.getAttribute('data-font') === 'modern';
+  if (isModern) {
+    html.removeAttribute('data-font');
+    try { localStorage.setItem('hebrewFont', 'siddur'); } catch(e) {}
+  } else {
+    html.setAttribute('data-font', 'modern');
+    try { localStorage.setItem('hebrewFont', 'modern'); } catch(e) {}
+  }
+  updateFontToggleBtn();
+}
+
+function updateFontToggleBtn() {
+  const btn = el('font-toggle-btn');
+  if (!btn) return;
+  const isModern = document.documentElement.getAttribute('data-font') === 'modern';
+  btn.textContent = isModern ? 'Aa Siddur' : 'Aa Modern';
+  btn.title = isModern ? 'Switch to siddur (serif) font' : 'Switch to modern (sans-serif) font';
+}
+
+// Vowel guide
+function toggleVowelGuide() {
+  vowelGuideVisible = !vowelGuideVisible;
+  const panel = el('vowel-guide-panel');
+  if (panel) panel.classList.toggle('hidden', !vowelGuideVisible);
+  const btn = el('vowel-guide-btn');
+  if (btn) {
+    btn.classList.toggle('bg-indigo-700',    vowelGuideVisible);
+    btn.classList.toggle('text-white',        vowelGuideVisible);
+    btn.classList.toggle('border-indigo-500', vowelGuideVisible);
+    btn.classList.toggle('bg-gray-800',      !vowelGuideVisible);
+    btn.classList.toggle('text-gray-400',    !vowelGuideVisible);
+    btn.classList.toggle('border-gray-700',  !vowelGuideVisible);
+  }
+}
+
+function hideVowelGuide() {
+  if (!vowelGuideVisible) return;
+  vowelGuideVisible = false;
+  const panel = el('vowel-guide-panel');
+  if (panel) panel.classList.add('hidden');
+  const btn = el('vowel-guide-btn');
+  if (btn) {
+    btn.classList.remove('bg-indigo-700', 'text-white', 'border-indigo-500');
+    btn.classList.add('bg-gray-800', 'text-gray-400', 'border-gray-700');
+  }
+}
+
+function initDrill(mode) {
+  currentMode = mode;
+  updateDisplay();
+
+  el('start-btn')?.addEventListener('click',    startTimer);
+  el('pause-btn')?.addEventListener('click',    pauseTimer);
+  el('complete-btn')?.addEventListener('click', completeSession);
+  el('vowel-scramble-btn')?.addEventListener('click', toggleVowelScramble);
+  el('record-btn')?.addEventListener('click',   toggleRecording);
+  el('vowel-guide-btn')?.addEventListener('click', toggleVowelGuide);
+  updateFontToggleBtn();
+
+  // Auto-shuffle for modes where random order improves practice
+  if (['syllables', 'phrases', 'prayer', 'consonants'].includes(mode)) {
+    shuffleItems();
+  }
+}
+
+// ── Boot ──────────────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  el('prev-btn')?.addEventListener('click',    prevItem);
+  el('next-btn')?.addEventListener('click',    nextItem);
+  el('shuffle-btn')?.addEventListener('click', shuffleItems);
+
+  if (document.querySelectorAll('.drill-item').length > 0) showItem(0);
+});
+// ── Keyboard navigation ───────────────────────────────────────────────────────────
+document.addEventListener('keydown', e => {
+  // Only active on drill pages with navigable items
+  if (!currentMode || currentMode === 'siddur') return;
+  if (!document.querySelectorAll('.drill-item').length) return;
+  // Don't steal keys when focus is on a button / link / form element
+  const tag = (document.activeElement || {}).tagName || '';
+  if (['BUTTON', 'INPUT', 'TEXTAREA', 'SELECT', 'A'].includes(tag)) return;
+  // Skip modifier combos (Ctrl+Z, Cmd+R …) and bare modifier / function keys
+  if (e.ctrlKey || e.metaKey) return;
+  const ignore = ['Tab', 'Escape', 'Shift', 'Control', 'Alt', 'Meta',
+                  'F1','F2','F3','F4','F5','F6','F7','F8','F9','F10','F11','F12'];
+  if (ignore.includes(e.key)) return;
+
+  e.preventDefault();
+  if (e.key === 'Backspace') prevItem();
+  else nextItem();
+});

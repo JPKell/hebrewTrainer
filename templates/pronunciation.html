@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+
+{% block title %}Pronunciation Guide — Hebrew Trainer{% endblock %}
+
+{% block content %}
+{# Override RTL for this reference page so tables render LTR #}
+<div class="space-y-8" dir="ltr">
+
+  <!-- Header -->
+  <div>
+    <a href="/" class="text-gray-600 hover:text-gray-300 transition-colors text-sm">‹ Back to Dashboard</a>
+    <h1 class="text-2xl font-bold text-gray-100 mt-3">Pronunciation Guide</h1>
+    <p class="text-gray-500 text-sm mt-1">Modern Israeli (Sephardic) pronunciation</p>
+  </div>
+
+  <!-- Consonants -->
+  <section>
+    <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-widest mb-3">
+      Consonants &mdash; <span class="font-hebrew text-base normal-case text-gray-400">אוֹתִיּוֹת</span>
+    </h2>
+    <div class="bg-gray-900 rounded-2xl border border-gray-800 overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead class="bg-gray-800/70">
+          <tr>
+            <th class="px-4 py-2.5 text-center text-gray-400 font-medium w-16">Letter</th>
+            <th class="px-4 py-2.5 text-left  text-gray-400 font-medium">Name</th>
+            <th class="px-4 py-2.5 text-left  text-gray-400 font-medium">Sound</th>
+            <th class="px-4 py-2.5 text-left  text-gray-400 font-medium hidden sm:table-cell">Example</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-800/60">
+          {% for letter, name, sound, example in consonants %}
+          <tr class="hover:bg-gray-800/40 transition-colors">
+            <td class="px-4 py-2.5 text-center">
+              <span class="font-hebrew text-2xl text-indigo-300">{{ letter }}</span>
+            </td>
+            <td class="px-4 py-2.5 text-gray-200 font-medium">{{ name }}</td>
+            <td class="px-4 py-2.5 text-gray-400">{{ sound }}</td>
+            <td class="px-4 py-2.5 text-gray-500 font-hebrew text-base hidden sm:table-cell"
+                dir="rtl">{{ example }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- Vowels -->
+  <section>
+    <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-widest mb-3">
+      Vowel Points &mdash; <span class="font-hebrew text-base normal-case text-gray-400">נִקּוּד</span>
+    </h2>
+    <div class="bg-gray-900 rounded-2xl border border-gray-800 overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead class="bg-gray-800/70">
+          <tr>
+            <th class="px-4 py-2.5 text-center text-gray-400 font-medium w-20">Sign</th>
+            <th class="px-4 py-2.5 text-left  text-gray-400 font-medium">Name</th>
+            <th class="px-4 py-2.5 text-left  text-gray-400 font-medium">Sound</th>
+            <th class="px-4 py-2.5 text-left  text-gray-400 font-medium">Example</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-800/60">
+          {% for sign, name, sound, heb_example, eng_example in vowels %}
+          <tr class="hover:bg-gray-800/40 transition-colors">
+            <td class="px-4 py-2.5 text-center">
+              <span class="font-hebrew text-2xl text-violet-300">{{ sign }}</span>
+            </td>
+            <td class="px-4 py-2.5 text-gray-200 font-medium">{{ name }}</td>
+            <td class="px-4 py-2.5 text-gray-400">{{ sound }}</td>
+            <td class="px-4 py-2.5 font-hebrew text-lg text-gray-400" dir="rtl">{{ heb_example }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- Reading tips -->
+  <section>
+    <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-widest mb-3">Reading Tips</h2>
+    <div class="bg-gray-900 rounded-2xl border border-gray-800 p-5 space-y-4 text-sm text-gray-400">
+      <p>
+        <span class="text-gray-200 font-medium">📖 Hebrew reads right to left.</span>
+        Start from the right margin of every line.
+      </p>
+      <p>
+        <span class="text-gray-200 font-medium">🔤 Vowel points (nikud)</span>
+        appear below, above, or inside letters and are written to guide pronunciation.
+      </p>
+      <p>
+        <span class="text-gray-200 font-medium">🔊 Modern Israeli pronunciation</span>
+        is Sephardic-based: both <span class="font-hebrew text-gray-300">ח</span> and
+        <span class="font-hebrew text-gray-300">כ</span> are guttural "ch";
+        both <span class="font-hebrew text-gray-300">א</span> and
+        <span class="font-hebrew text-gray-300">ע</span> are silent/glottal.
+      </p>
+      <p>
+        <span class="text-gray-200 font-medium">🔡 Final forms:</span>
+        Some letters change shape at the end of a word —
+        <span class="font-hebrew text-gray-300">כ→ך  מ→ם  נ→ן  פ→ף  צ→ץ</span>
+      </p>
+      <p>
+        <span class="text-gray-200 font-medium">🔵 Dagesh:</span>
+        A dot inside a letter changes pronunciation:
+        <span class="font-hebrew text-gray-300">בּ=b</span> vs
+        <span class="font-hebrew text-gray-300">ב=v</span>,
+        <span class="font-hebrew text-gray-300">פּ=p</span> vs
+        <span class="font-hebrew text-gray-300">פ=f</span>,
+        <span class="font-hebrew text-gray-300">כּ=k</span> vs
+        <span class="font-hebrew text-gray-300">כ=ch</span>
+      </p>
+    </div>
+  </section>
+
+</div>
+{% endblock %}

@@ -1,0 +1,68 @@
+/* ── Hebrew Trainer — Custom Styles ─────────────────────────────────────── */
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Hebrew:wght@300;400;500;600;700&display=swap');
+
+:root {
+  --font-hebrew: 'Frank Ruhl Libre', 'Times New Roman', Times, serif;
+}
+
+html[data-font="modern"] {
+  --font-hebrew: 'Noto Sans Hebrew', system-ui, sans-serif;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: 'Noto Sans Hebrew', system-ui, sans-serif;
+}
+
+/* ── Hebrew text ─────────────────────────────────────────────────────────── */
+.font-hebrew,
+.hebrew-text {
+  font-family: var(--font-hebrew);
+}
+
+.hebrew-text {
+  direction: rtl;
+  line-height: 2.8;
+  letter-spacing: 0.04em;
+}
+
+/* ── Timer ───────────────────────────────────────────────────────────────── */
+.timer-display {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.12em;
+}
+
+@keyframes pulse-soft {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.65; }
+}
+
+.timer-active {
+  animation: pulse-soft 2s ease-in-out infinite;
+}
+
+/* ── Drill cards ─────────────────────────────────────────────────────────── */
+.drill-card {
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.drill-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 20px rgba(99, 102, 241, 0.15);
+}
+
+/* ── Drill content scroll area ───────────────────────────────────────────── */
+.drill-content {
+  min-height: 14rem;
+  max-height: 56vh;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #374151 #111827;
+}
+
+.drill-content::-webkit-scrollbar        { width: 5px; }
+.drill-content::-webkit-scrollbar-track  { background: #111827; }
+.drill-content::-webkit-scrollbar-thumb  { background: #374151; border-radius: 4px; }
