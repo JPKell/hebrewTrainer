@@ -147,6 +147,12 @@
                 title="Shuffle order">
           ⇄
         </button>
+        <button id="speak-btn"
+                class="px-3 py-1.5 bg-gray-800 hover:bg-gray-700 border border-gray-700
+                       text-gray-400 text-sm rounded-lg transition-colors hidden"
+                title="Read aloud">
+          🔊
+        </button>
         {% if mode == 'letters' %}
         <button id="vowel-scramble-btn"
                 class="px-3 py-1.5 bg-gray-800 hover:bg-gray-700 border border-gray-700
@@ -191,12 +197,24 @@
     <div id="drill-items-container" class="drill-content">
       {% for item in content %}
       <div class="drill-item hidden" data-original="{{ item }}">
+        {% if mode in ['consonants', 'letters'] %}
+        <div class="hebrew-baseline-wrap py-10 px-6 min-h-52">
+          <div class="hebrew-baseline-inner">
+            <div class="hebrew-text font-hebrew text-center text-gray-100
+                        {% if mode == 'consonants' %}text-8xl sm:text-9xl{% else %}text-5xl sm:text-6xl{% endif %}">
+              {{ item }}
+            </div>
+            {% if mode == 'consonants' %}<div class="baseline-rule-line"></div>{% endif %}
+          </div>
+        </div>
+        {% else %}
         <div class="hebrew-text font-hebrew
                     text-center text-gray-100 py-10 px-6
                     min-h-52 flex items-center justify-center
-                    {% if mode == 'consonants' %}text-8xl sm:text-9xl{% else %}text-5xl sm:text-6xl{% endif %}">
+                    text-5xl sm:text-6xl">
           {{ item }}
         </div>
+        {% endif %}
       </div>
       {% else %}
       <div class="text-center py-16 text-gray-600 text-sm">
@@ -206,11 +224,14 @@
     </div>
 
     <!-- Transliteration box (shows previous item's answer) -->
-    <div id="translit-box" class="hidden border-t border-gray-800 bg-gray-950/40 px-6 py-4 text-center">
+    <div id="translit-box" class="hidden border-t border-gray-800 bg-gray-950/40 px-6 py-3 text-center">
       <p class="text-xs text-gray-600 uppercase tracking-widest mb-2">Previous item</p>
-      <p id="translit-prev-hebrew" class="font-hebrew text-2xl text-gray-500 mb-1.5" dir="rtl"></p>
-      <p id="translit-text" class="text-base text-gray-400 tracking-wide leading-relaxed"
-         dir="ltr" style="font-style: italic;"></p>
+      <p class="flex items-center justify-center gap-2 flex-wrap">
+        <span id="translit-prev-hebrew" class="font-hebrew text-2xl text-gray-400" dir="rtl"></span>
+        <span class="text-gray-700">&mdash;</span>
+        <span id="translit-text" class="text-sm text-gray-500 tracking-wide"
+              dir="ltr" style="font-style: italic;"></span>
+      </p>
     </div>
 
   </div>

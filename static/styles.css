@@ -63,6 +63,52 @@ body {
   scrollbar-color: #374151 #111827;
 }
 
+/* ── Baseline rule for consonants / letters drill ────────────────────────── */
+/*
+  The rule is a sibling element placed directly below the Hebrew glyph.
+  With line-height:1, the text element height matches the em square so
+  the rule sits just below where non-descending letters end.
+  Sofit forms (ך ן ף ץ) extend their descenders below the em square and
+  visibly cross the rule, making the distinction immediately clear.
+*/
+.hebrew-baseline-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+}
+
+.hebrew-baseline-inner {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  overflow: visible;
+}
+
+/* Override the global line-height inside a baseline wrap */
+.hebrew-baseline-wrap .hebrew-text {
+  line-height: 1;
+}
+
+.baseline-rule-line {
+  width: 140%;
+  max-width: 6rem;
+  height: 2px;
+  border-radius: 1px;
+  /* Negative margin pulls the rule UP into the em-square to sit at the
+     typographic baseline. Normal letters rest on it; sofit descenders
+     (ך ן ף ץ) cross below it. ~0.22em ≈ descender depth of Frank Ruhl Libre. */
+  margin-top: -0.22em;
+  background: linear-gradient(
+    to right,
+    transparent,
+    rgba(75, 85, 99, 0.5) 10%,
+    rgba(156, 163, 175, 0.5) 50%,
+    rgba(75, 85, 99, 0.5) 90%,
+    transparent
+  );
+}
+
 .drill-content::-webkit-scrollbar        { width: 5px; }
 .drill-content::-webkit-scrollbar-track  { background: #111827; }
 .drill-content::-webkit-scrollbar-thumb  { background: #374151; border-radius: 4px; }

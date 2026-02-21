@@ -141,10 +141,41 @@ function updateTranslitBox(hebrewText) {
   tBox.classList.remove('hidden');
 }
 
+// ── Text-to-speech ────────────────────────────────────────────────────────────
+function speakCurrent() {
+  if (!window.speechSynthesis) return;
+  const items = document.querySelectorAll('.drill-item');
+  if (!items[currentIndex]) return;
+  const text = (items[currentIndex].dataset.original || '').trim();
+  // Skip section dividers (e.g. ── TITLE ──) and empty items
+  if (!text || text.startsWith('\u2500')) return;
+
+  window.speechSynthesis.cancel();
+
+  const utter = new SpeechSynthesisUtterance(text);
+  utter.lang = 'he-IL';
+  utter.rate = 0.82; // slightly slower for learning
+
+  const btn = el('speak-btn');
+  if (btn) {
+    btn.textContent = '🔊…';
+    btn.disabled = true;
+    const reset = () => { btn.textContent = '🔊'; btn.disabled = false; };
+    utter.onend  = reset;
+    utter.onerror = reset;
+  }
+  window.speechSynthesis.speak(utter);
+}
+
 function showItem(index) {
   const items = document.querySelectorAll('.drill-item');
   if (!items.length) return;
   hideVowelGuide();
+
+  // Cancel any in-progress speech when navigating
+  if (window.speechSynthesis) window.speechSynthesis.cancel();
+  const speakBtn = el('speak-btn');
+  if (speakBtn) { speakBtn.textContent = '🔊'; speakBtn.disabled = false; }
 
   // Capture whichever item is currently visible — its answer will appear in the translit box
   const visibleItem = Array.from(items).find(item => !item.classList.contains('hidden'));
@@ -464,7 +495,24 @@ function initDrill(mode) {
   el('vowel-scramble-btn')?.addEventListener('click', toggleVowelScramble);
   el('record-btn')?.addEventListener('click',   toggleRecording);
   el('vowel-guide-btn')?.addEventListener('click', toggleVowelGuide);
+  el('speak-btn')?.addEventListener('click', speakCurrent);
   updateFontToggleBtn();
+
+  // Show speak button only if browser supports Web Speech API
+  if (window.speechSynthesis) {
+    el('speak-btn')?.classList.remove('hidden');
+  }
+
+  // Tap / click the card to advance to the next item
+  const container = el('drill-items-container');
+  if (container) {
+    container.style.cursor = 'pointer';
+    container.addEventListener('click', e => {
+      // Ignore clicks on interactive elements inside the card
+      if (e.target.closest('button, a, input, select, textarea')) return;
+      nextItem();
+    });
+  }
 
   // Auto-shuffle for modes where random order improves practice
   if (['syllables', 'phrases', 'prayer', 'consonants'].includes(mode)) {
