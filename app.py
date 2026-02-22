@@ -1,8 +1,17 @@
 import os
 import json
-from datetime import date, timedelta
+from datetime import date, timedelta, datetime, timezone
 from flask import Flask, render_template, redirect, url_for, request, jsonify, flash
 from models import db, PracticeSession, Stats
+
+# ── Timezone offset ───────────────────────────────────────────────────────────
+# Server runs UTC; app records dates in PST (UTC-8).
+# Change TZ_OFFSET_HOURS to -7 during daylight saving (PDT) if needed.
+TZ_OFFSET_HOURS = -8
+
+def today_local() -> date:
+    """Return the current date in the configured local timezone (default PST)."""
+    return (datetime.now(timezone.utc) + timedelta(hours=TZ_OFFSET_HOURS)).date()
 
 basedir = os.path.abspath(os.path.dirname(__file__))
 
@@ -276,7 +285,7 @@ def get_or_create_stats():
 def get_current_week_info():
     """Returns (current_week_number, start_date, week_data_dict)."""
     first_session = PracticeSession.query.order_by(PracticeSession.date.asc()).first()
-    today = date.today()
+    today = today_local()
 
     if first_session:
         days_elapsed = (today - first_session.date).days
@@ -316,7 +325,7 @@ def dashboard():
     current_week, start_date, _ = get_current_week_info()
     current_week_plan = WEEKLY_PLAN[current_week - 1]
 
-    today = date.today()
+    today = today_local()
     today_sessions = PracticeSession.query.filter_by(date=today).all()
     today_by_mode = {}
     for s in today_sessions:
@@ -372,7 +381,7 @@ def complete_session():
 
     mode = data.get("mode", "letters")
     minutes = max(1, int(data.get("minutes", 1)))
-    today = date.today()
+    today = today_local()
     yesterday = today - timedelta(days=1)
 
     # Persist session
