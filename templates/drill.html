@@ -2,7 +2,7 @@
 
 {% block title %}
   {% if mode == 'letters' %}Letter Drills
-  {% elif mode == 'syllables' %}Syllable Blending
+  {% elif mode == 'words' %}Word Reading
   {% elif mode == 'phrases' %}Phrase Flow
   {% elif mode == 'prayer' %}Prayer Simulation
   {% elif mode == 'consonants' %}Rapid-Fire Consonants
@@ -18,7 +18,7 @@
     <a href="/" class="text-gray-600 hover:text-gray-300 transition-colors">‹</a>
     <h1 class="text-xl font-semibold text-gray-100">
       {% if mode == 'letters' %}Letter + Vowel Drills
-      {% elif mode == 'syllables' %}Syllable Blending
+      {% elif mode == 'words' %}Word Reading
       {% elif mode == 'phrases' %}Phrase Flow
       {% elif mode == 'prayer' %}Prayer Simulation
       {% elif mode == 'consonants' %}Rapid-Fire Consonants
@@ -27,7 +27,7 @@
     </h1>
     <span class="text-xs px-2.5 py-1 rounded-full font-medium
       {% if mode == 'letters' %}bg-indigo-900/60 text-indigo-400
-      {% elif mode == 'syllables' %}bg-violet-900/60 text-violet-400
+      {% elif mode == 'words' %}bg-violet-900/60 text-violet-400
       {% elif mode == 'phrases' %}bg-sky-900/60 text-sky-400
       {% elif mode == 'consonants' %}bg-rose-900/60 text-rose-400
       {% elif mode == 'siddur' %}bg-teal-900/60 text-teal-400
@@ -242,7 +242,7 @@
     Navigate items, then <span class="text-gray-500">Complete</span> to save your session.
     {% if mode == 'letters' %}<br class="mt-1">
     Use <span class="text-gray-500">🔀 Vowels</span> to drill vowels in random order.
-    {% elif mode in ['syllables', 'phrases', 'prayer', 'consonants'] %}<br class="mt-1">
+    {% elif mode in ['words', 'phrases', 'prayer', 'consonants'] %}<br class="mt-1">
     <span class="text-gray-600">Items shuffle randomly on load. Use ⇄ to re-shuffle.</span>
     {% endif %}
   </p>

@@ -36,7 +36,7 @@
               {% if mode_filter == mode %}
                 {% if mode == 'consonants' %}bg-rose-700 text-white
                 {% elif mode == 'letters' %}bg-indigo-700 text-white
-                {% elif mode == 'syllables' %}bg-violet-700 text-white
+                {% elif mode == 'words' %}bg-violet-700 text-white
                 {% elif mode == 'phrases' %}bg-sky-700 text-white
                 {% elif mode == 'prayer' %}bg-amber-700 text-white
                 {% elif mode == 'siddur' %}bg-teal-700 text-white
@@ -58,7 +58,7 @@
       <span class="w-2.5 h-2.5 rounded-full shrink-0
         {% if session.mode == 'consonants' %}bg-rose-500
         {% elif session.mode == 'letters' %}bg-indigo-500
-        {% elif session.mode == 'syllables' %}bg-violet-500
+        {% elif session.mode == 'words' %}bg-violet-500
         {% elif session.mode == 'phrases' %}bg-sky-500
         {% elif session.mode == 'siddur' %}bg-teal-500
         {% else %}bg-amber-500{% endif %}"></span>

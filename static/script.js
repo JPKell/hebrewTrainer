@@ -515,7 +515,7 @@ function initDrill(mode) {
   }
 
   // Auto-shuffle for modes where random order improves practice
-  if (['syllables', 'phrases', 'prayer', 'consonants'].includes(mode)) {
+  if (['words', 'phrases', 'prayer', 'consonants'].includes(mode)) {
     shuffleItems();
   }
 }

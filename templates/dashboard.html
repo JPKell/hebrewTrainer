@@ -79,7 +79,7 @@
             <div class="h-1.5 rounded-full transition-all
               {% if row.mode == 'consonants' %}bg-rose-500
               {% elif row.mode == 'letters' %}bg-indigo-500
-              {% elif row.mode == 'syllables' %}bg-violet-500
+              {% elif row.mode == 'words' %}bg-violet-500
               {% elif row.mode == 'phrases' %}bg-sky-500
               {% elif row.mode == 'siddur' %}bg-teal-500
               {% else %}bg-amber-500{% endif %}"
@@ -104,7 +104,7 @@
       <a href="/drill/{{ mode }}"
          class="text-sm px-4 py-1.5 rounded-xl font-medium transition-colors
          {% if mode == 'letters' %}bg-indigo-900/60 text-indigo-400 hover:bg-indigo-800/80
-         {% elif mode == 'syllables' %}bg-violet-900/60 text-violet-400 hover:bg-violet-800/80
+         {% elif mode == 'words' %}bg-violet-900/60 text-violet-400 hover:bg-violet-800/80
          {% elif mode == 'phrases' %}bg-sky-900/60 text-sky-400 hover:bg-sky-800/80
          {% elif mode == 'consonants' %}bg-rose-900/60 text-rose-400 hover:bg-rose-800/80
          {% elif mode == 'siddur' %}bg-teal-900/60 text-teal-400 hover:bg-teal-800/80
@@ -146,14 +146,14 @@
         <div class="text-gray-600 group-hover:text-indigo-400 transition-colors text-lg">›</div>
       </a>
 
-      <a href="/drill/syllables"
+      <a href="/drill/words"
          class="drill-card group flex items-center gap-4 bg-gray-900 hover:bg-gray-800/80 border border-gray-800 hover:border-violet-700/60 rounded-2xl p-5 transition-all">
         <div class="w-12 h-12 rounded-xl bg-violet-950 flex items-center justify-center shrink-0">
-          <span class="text-xl font-hebrew text-violet-300">בָּר</span>
+          <span class="text-xl font-hebrew text-violet-300">בָּרוּךְ</span>
         </div>
         <div class="flex-1 min-w-0">
-          <div class="font-semibold text-gray-100">Syllable Blending</div>
-          <div class="text-sm text-gray-500 mt-0.5">Common Hebrew syllables</div>
+          <div class="font-semibold text-gray-100">Word Reading</div>
+          <div class="text-sm text-gray-500 mt-0.5">Hebrew words from prayer &amp; everyday use</div>
         </div>
         <div class="text-gray-600 group-hover:text-violet-400 transition-colors text-lg">›</div>
       </a>
@@ -208,7 +208,7 @@
         <div class="flex items-center gap-3">
           <span class="w-2 h-2 rounded-full
             {% if session.mode == 'letters' %}bg-indigo-500
-            {% elif session.mode == 'syllables' %}bg-violet-500
+            {% elif session.mode == 'words' %}bg-violet-500
             {% elif session.mode == 'phrases' %}bg-sky-500
             {% elif session.mode == 'consonants' %}bg-rose-500
             {% elif session.mode == 'siddur' %}bg-teal-500

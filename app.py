@@ -1,7 +1,7 @@
 import os
 import json
 from datetime import date, timedelta
-from flask import Flask, render_template, redirect, url_for, request, jsonify
+from flask import Flask, render_template, redirect, url_for, request, jsonify, flash
 from models import db, PracticeSession, Stats
 
 basedir = os.path.abspath(os.path.dirname(__file__))
@@ -66,7 +66,7 @@ VOWELS = [
 DRILL_META = [
     ("consonants", "rose",   10),
     ("letters",    "indigo", 12),
-    ("syllables",  "violet", 15),
+    ("words",  "violet", 15),
     ("phrases",    "sky",    15),
     ("prayer",     "amber",  20),
     ("siddur",     "teal",   15),
@@ -76,7 +76,7 @@ DRILL_META = [
 MODE_RECOMMENDED = {
     "consonants": "10 min",
     "letters":    "10–15 min",
-    "syllables":  "15 min",
+    "words":  "15 min",
     "phrases":    "15 min",
     "prayer":     "20 min",
     "siddur":     "10–20 min",
@@ -91,15 +91,15 @@ WEEKLY_PLAN = [
         "title": "Eliminate Letter & Vowel Lag",
         "weeks_label": "Weeks 1–2",
         "milestone": "No hesitation on individual letters",
-        "recommended_modes": ["consonants", "letters", "syllables", "siddur"],
+        "recommended_modes": ["consonants", "letters", "words", "siddur"],
         "daily_minutes": "45–60",
         "structure": [
             {"time": "10 min", "label": "Warm-up",
              "body": "Rapid-fire aleph-bet — forward then random order. Include final letters: ך ם ן ף ץ. Time yourself — aim for smooth, not rushed."},
             {"time": "10–15 min", "label": "Vowel Drills",
              "body": "Every letter with all 8 vowels: Kamatz · Patach · Tzere · Segol · Cholam · Kubutz/Shuruk · Chirik · Sheva. Don’t think — just sound it. Example: בָ בַ בֶ בֵ בִ בֹ בוּ בֻ בְ"},
-            {"time": "15 min", "label": "Syllable Blending",
-             "body": "Two- and three-letter clusters: בָּר · שֶׁמ · מַלְ · תּוֹר. Train your eye to grab clusters at once — not letter by letter."},
+            {"time": "15 min", "label": "Word Reading",
+             "body": "Short Hebrew words: בָּרוּךְ · שָׁלוֹם · יִשְׂרָאֵל. Train your eye to grab clusters at once — not letter by letter."},
             {"time": "10–15 min", "label": "Slow Siddur Reading",
              "body": "Take 3–5 lines from a siddur. Read slowly but continuously. No translating. No stopping unless you truly freeze."},
         ],
@@ -112,15 +112,15 @@ WEEKLY_PLAN = [
         "title": "Eliminate Letter & Vowel Lag",
         "weeks_label": "Weeks 1–2",
         "milestone": "No thinking about letters",
-        "recommended_modes": ["consonants", "letters", "syllables", "siddur"],
+        "recommended_modes": ["consonants", "letters", "words", "siddur"],
         "daily_minutes": "45–60",
         "structure": [
             {"time": "10 min", "label": "Warm-up — Random Order",
              "body": "Aleph-bet in random order using the shuffle button. Beat yesterday’s smoothness, not speed. The goal is zero lag."},
             {"time": "10–15 min", "label": "Vowel Drills — Scrambled",
              "body": "Use the 🔀 Vowels button to drill vowels in random order. No fixed sequence — force instant recognition without the pattern crutch."},
-            {"time": "15 min", "label": "Syllable Blending",
-             "body": "Focus on clusters you hesitated on yesterday. Mark them mentally and return to them. Build automaticity."},
+            {"time": "15 min", "label": "Word Reading",
+             "body": "Focus on words you hesitated on. Mark them mentally and return to them. Build automaticity."},
             {"time": "10–15 min", "label": "Slow Siddur Reading",
              "body": "Try to read one more line than yesterday without stopping. Eyes and mouth only — no translation happening in your head."},
         ],
@@ -133,13 +133,13 @@ WEEKLY_PLAN = [
         "title": "Increase Speed and Flow",
         "weeks_label": "Weeks 3–4",
         "milestone": "Can read a full paragraph without stopping",
-        "recommended_modes": ["syllables", "phrases", "siddur"],
+        "recommended_modes": ["words", "phrases", "siddur"],
         "daily_minutes": "45–60",
         "structure": [
             {"time": "10–15 min", "label": "Timed Reading",
              "body": "Pick a paragraph from a siddur or Tehillim. Read 5 minutes nonstop. Mark where you end. Try to get further tomorrow."},
             {"time": "10 min", "label": "Sheva & Dagesh Focus",
-             "body": "Open vs. closed syllables. Hard/soft letters: בּ vs. ב · פּ vs. פ · כּ vs. כ. Slow drill on anything that still trips you."},
+             "body": "Open vs. closed syllables. Hard/soft letters: בּ vs. ב · פּ vs. פ · כּ vs. כ. Use the Words drill on anything that still trips you."},
             {"time": "15 min", "label": "Phrase Reading",
              "body": "Read in 3–5 word chunks using the Phrase Flow drill. Your eyes should move ahead of your mouth — practice that gap."},
             {"time": "10 min", "label": "Out-Loud Projection",
@@ -154,7 +154,7 @@ WEEKLY_PLAN = [
         "title": "Increase Speed and Flow",
         "weeks_label": "Weeks 3–4",
         "milestone": "Can read Tehillim smoothly at a slow, steady pace",
-        "recommended_modes": ["syllables", "phrases", "siddur"],
+        "recommended_modes": ["words", "phrases", "siddur"],
         "daily_minutes": "45–60",
         "structure": [
             {"time": "10–15 min", "label": "Timed Reading",
@@ -345,7 +345,7 @@ def dashboard():
 
 @app.route("/drill/<mode>")
 def drill(mode):
-    valid_modes = ["letters", "syllables", "phrases", "prayer", "consonants", "siddur"]
+    valid_modes = ["letters", "words", "phrases", "prayer", "consonants", "siddur"]
     if mode not in valid_modes:
         return redirect(url_for("dashboard"))
     content = [] if mode == "siddur" else load_drills().get(mode, [])
@@ -443,7 +443,7 @@ def sessions():
     if mode_filter != "all":
         query = query.filter_by(mode=mode_filter)
     all_sessions = query.all()
-    modes = ["consonants", "letters", "syllables", "phrases", "prayer", "siddur"]
+    modes = ["consonants", "letters", "words", "phrases", "prayer", "siddur"]
     return render_template(
         "sessions.html",
         sessions=all_sessions,
@@ -482,7 +482,101 @@ def delete_mode_sessions(mode):
     return redirect(url_for("sessions", mode=mode))
 
 
-# ── Bootstrap ─────────────────────────────────────────────────────────────────────────────────
+# ── Admin ─────────────────────────────────────────────────────────────────────
+
+@app.route("/admin")
+def admin():
+    sessions_all = PracticeSession.query.order_by(
+        PracticeSession.date.desc(), PracticeSession.id.desc()
+    ).all()
+    stats = get_or_create_stats()
+    modes = ["consonants", "letters", "words", "phrases", "prayer", "siddur"]
+    return render_template(
+        "admin.html",
+        sessions=sessions_all,
+        stats=stats,
+        modes=modes,
+    )
+
+
+@app.route("/admin/session/<int:session_id>/edit", methods=["POST"])
+def admin_edit_session(session_id):
+    s = PracticeSession.query.get_or_404(session_id)
+    new_date = request.form.get("date")
+    new_mode = request.form.get("mode")
+    new_minutes = request.form.get("minutes")
+    if new_date:
+        try:
+            s.date = date.fromisoformat(new_date)
+        except ValueError:
+            flash("Invalid date format.", "error")
+            return redirect(url_for("admin"))
+    if new_mode:
+        s.mode = new_mode
+    if new_minutes:
+        try:
+            s.minutes = max(1, int(new_minutes))
+        except ValueError:
+            flash("Invalid minutes value.", "error")
+            return redirect(url_for("admin"))
+    db.session.commit()
+    flash(f"Session #{session_id} updated.", "success")
+    return redirect(url_for("admin"))
+
+
+@app.route("/admin/session/<int:session_id>/delete", methods=["POST"])
+def admin_delete_session(session_id):
+    s = PracticeSession.query.get_or_404(session_id)
+    stats = get_or_create_stats()
+    stats.total_minutes = max(0, stats.total_minutes - s.minutes)
+    if s.recording_path:
+        filepath = os.path.join(basedir, "static", s.recording_path)
+        if os.path.exists(filepath):
+            os.remove(filepath)
+    db.session.delete(s)
+    db.session.commit()
+    flash(f"Session #{session_id} deleted.", "success")
+    return redirect(url_for("admin"))
+
+
+@app.route("/admin/stats/edit", methods=["POST"])
+def admin_edit_stats():
+    stats = get_or_create_stats()
+    streak = request.form.get("current_streak")
+    longest = request.form.get("longest_streak")
+    total = request.form.get("total_minutes")
+    last = request.form.get("last_practice_date")
+    try:
+        if streak is not None:
+            stats.current_streak = max(0, int(streak))
+        if longest is not None:
+            stats.longest_streak = max(0, int(longest))
+        if total is not None:
+            stats.total_minutes = max(0, int(total))
+        if last:
+            stats.last_practice_date = date.fromisoformat(last)
+        elif last == "":
+            stats.last_practice_date = None
+    except (ValueError, TypeError):
+        flash("Invalid stats value.", "error")
+        return redirect(url_for("admin"))
+    db.session.commit()
+    flash("Stats updated.", "success")
+    return redirect(url_for("admin"))
+
+
+@app.route("/admin/stats/reset", methods=["POST"])
+def admin_reset_stats():
+    stats = get_or_create_stats()
+    stats.current_streak = 0
+    stats.longest_streak = 0
+    stats.total_minutes = 0
+    stats.last_practice_date = None
+    db.session.commit()
+    flash("Stats reset to zero.", "success")
+    return redirect(url_for("admin"))
+
+
 
 with app.app_context():
     db.create_all()
