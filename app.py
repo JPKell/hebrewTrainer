@@ -1495,7 +1495,53 @@ def admin():
         sessions=sessions_all,
         users_stats=users_stats,
         modes=modes,
+        users=all_users,
     )
+
+
+@app.route("/admin/user/<int:user_id>/edit", methods=["POST"])
+@admin_required
+def admin_edit_user(user_id):
+    user = User.query.get_or_404(user_id)
+    username = request.form.get("username", "").strip()
+    plan_weeks = request.form.get("plan_weeks", type=int)
+    daily_minutes = request.form.get("daily_minutes", type=int, default=0) or 0
+    siddur_minutes = request.form.get("siddur_minutes", type=int, default=0) or 0
+
+    if not username:
+        flash("Username cannot be empty.", "error")
+        return redirect(url_for("admin"))
+    existing = User.query.filter(User.username == username, User.id != user.id).first()
+    if existing:
+        flash("That username is already taken.", "error")
+        return redirect(url_for("admin"))
+    if plan_weeks not in (8, 12, 16):
+        flash("Invalid plan length.", "error")
+        return redirect(url_for("admin"))
+    if daily_minutes < 0 or siddur_minutes < 0:
+        flash("Minutes cannot be negative.", "error")
+        return redirect(url_for("admin"))
+    if siddur_minutes > daily_minutes > 0:
+        flash("Siddur time cannot exceed total daily time.", "error")
+        return redirect(url_for("admin"))
+
+    user.username = username
+    user.plan_weeks = plan_weeks
+    user.daily_minutes = daily_minutes
+    user.siddur_minutes = siddur_minutes
+    db.session.commit()
+    flash(f"User {user.username} updated.", "success")
+    return redirect(url_for("admin"))
+
+
+@app.route("/admin/user/<int:user_id>/reset_password", methods=["POST"])
+@admin_required
+def admin_reset_user_password(user_id):
+    user = User.query.get_or_404(user_id)
+    user.set_password("password123")
+    db.session.commit()
+    flash(f"Password reset for {user.username}.", "success")
+    return redirect(url_for("admin"))
 
 
 @app.route("/admin/session/<int:session_id>/edit", methods=["POST"])

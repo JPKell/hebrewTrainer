@@ -12,6 +12,79 @@
   </div>
 
   <!-- ── Stats Editor ──────────────────────────────────────────────────────── -->
+  <div class="bg-gray-900 rounded-2xl border border-gray-800 overflow-hidden">
+    <div class="px-6 py-4 border-b border-gray-800 flex items-center justify-between">
+      <h2 class="text-sm font-semibold text-gray-400 uppercase tracking-widest">
+        Users
+        <span class="ml-2 text-gray-600 normal-case font-normal">({{ users | length }} records)</span>
+      </h2>
+    </div>
+
+    <!-- Table header -->
+    <div class="hidden sm:grid grid-cols-12 gap-2 px-6 py-2 text-xs text-gray-600 uppercase tracking-wider border-b border-gray-800">
+      <div class="col-span-1">ID</div>
+      <div class="col-span-3">Username</div>
+      <div class="col-span-2">Plan</div>
+      <div class="col-span-2">Daily</div>
+      <div class="col-span-2">Siddur</div>
+      <div class="col-span-2 text-right">Actions</div>
+    </div>
+
+    <!-- User rows -->
+    <div class="divide-y divide-gray-800/60">
+      {% for u in users %}
+      <form method="POST" action="/admin/user/{{ u.id }}/edit"
+            class="px-6 py-4 grid grid-cols-12 gap-2 items-end">
+        <div class="col-span-12 sm:col-span-1 text-xs text-gray-600">#{{ u.id }}</div>
+        <div class="col-span-12 sm:col-span-3">
+          <label class="text-xs text-gray-600">Username</label>
+          <input type="text" name="username" value="{{ u.username }}"
+                 class="w-full bg-gray-800 border border-gray-700 rounded-lg px-2 py-1.5
+                        text-gray-100 text-xs focus:outline-none focus:border-indigo-500">
+        </div>
+        <div class="col-span-6 sm:col-span-2">
+          <label class="text-xs text-gray-600">Plan (weeks)</label>
+          <select name="plan_weeks"
+                  class="w-full bg-gray-800 border border-gray-700 rounded-lg px-2 py-1.5
+                         text-gray-100 text-xs focus:outline-none focus:border-indigo-500">
+            {% for w in [8, 12, 16] %}
+            <option value="{{ w }}" {% if u.plan_weeks == w %}selected{% endif %}>{{ w }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-span-6 sm:col-span-2">
+          <label class="text-xs text-gray-600">Daily minutes</label>
+          <input type="number" min="0" name="daily_minutes" value="{{ u.daily_minutes }}"
+                 class="w-full bg-gray-800 border border-gray-700 rounded-lg px-2 py-1.5
+                        text-gray-100 text-xs focus:outline-none focus:border-indigo-500">
+        </div>
+        <div class="col-span-6 sm:col-span-2">
+          <label class="text-xs text-gray-600">Siddur minutes</label>
+          <input type="number" min="0" name="siddur_minutes" value="{{ u.siddur_minutes }}"
+                 class="w-full bg-gray-800 border border-gray-700 rounded-lg px-2 py-1.5
+                        text-gray-100 text-xs focus:outline-none focus:border-indigo-500">
+        </div>
+        <div class="col-span-12 sm:col-span-2 flex flex-wrap justify-end gap-2">
+          <button type="submit"
+                  class="text-xs px-3 py-1.5 bg-emerald-700 hover:bg-emerald-600 text-white
+                         rounded-lg transition-colors">
+            Save
+          </button>
+          <button type="submit" formaction="/admin/user/{{ u.id }}/reset_password" formmethod="POST"
+                  onclick="return confirm('Reset password for {{ u.username }} to password123?')"
+                  class="text-xs px-3 py-1.5 bg-amber-900/40 hover:bg-amber-800/60 text-amber-300
+                         rounded-lg transition-colors border border-amber-800/60">
+            Reset Password
+          </button>
+        </div>
+      </form>
+      {% else %}
+      <div class="px-6 py-10 text-center text-gray-600 text-sm">No users found.</div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- ── Stats Editor ──────────────────────────────────────────────────────── -->
   <div class="bg-gray-900 rounded-2xl border border-gray-800 p-6 space-y-6">
     <h2 class="text-sm font-semibold text-gray-400 uppercase tracking-widest">Stats</h2>
 
