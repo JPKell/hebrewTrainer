@@ -24,8 +24,8 @@
       <div class="text-base mt-1">🏆</div>
     </div>
     <div class="bg-gray-900 rounded-2xl p-4 text-center border border-gray-800">
-      <div class="text-3xl font-bold text-emerald-400">{{ stats.total_minutes }}</div>
-      <div class="text-xs text-gray-500 mt-1 leading-tight">Total<br>Minutes</div>
+      <div class="text-2xl font-bold text-emerald-400 leading-tight">{{ stats.total_time_seconds | fmt_duration }}</div>
+      <div class="text-xs text-gray-500 mt-1 leading-tight">Total<br>Time</div>
       <div class="text-base mt-1">⏱️</div>
     </div>
   </div>
@@ -231,7 +231,7 @@
           <span class="text-sm text-gray-300 capitalize">{{ 'vowels' if session.mode == 'letters' else ('vowel fire' if session.mode == 'vowelfire' else session.mode) }}</span>
         </div>
         <div class="flex items-center gap-4 text-sm text-gray-500">
-          <span>{{ session.minutes }} min</span>
+          <span>{{ session.duration_seconds | fmt_duration }}</span>
           <span>{{ session.date.strftime('%b %-d') }}</span>
         </div>
       </div>

@@ -21,6 +21,14 @@ class User(db.Model):
     daily_minutes  = db.Column(db.Integer, default=0,  nullable=False)  # 0 = follow plan
     siddur_minutes = db.Column(db.Integer, default=0,  nullable=False)  # 0 = follow plan
 
+    # Auto-play interval (seconds) saved per drill mode
+    interval_consonants = db.Column(db.Float, default=1.0, nullable=False)
+    interval_vowelfire  = db.Column(db.Float, default=1.0, nullable=False)
+    interval_letters    = db.Column(db.Float, default=2.0, nullable=False)
+    interval_words      = db.Column(db.Float, default=2.0, nullable=False)
+    interval_phrases    = db.Column(db.Float, default=5.0, nullable=False)
+    interval_prayer     = db.Column(db.Float, default=5.0, nullable=False)
+
     sessions = db.relationship("PracticeSession", backref="user", lazy=True, cascade="all, delete-orphan")
     stats = db.relationship("Stats", backref="user", uselist=False, cascade="all, delete-orphan")
 
@@ -42,7 +50,13 @@ class PracticeSession(db.Model):
     date = db.Column(db.Date, nullable=False, default=_today_local)
     mode = db.Column(db.String(50), nullable=False)
     minutes = db.Column(db.Integer, nullable=False, default=1)
+    seconds = db.Column(db.Integer, nullable=False, default=0)
     recording_path = db.Column(db.String(255), nullable=True)
+
+    @property
+    def duration_seconds(self):
+        """Total elapsed seconds — falls back to minutes*60 for pre-migration rows."""
+        return self.seconds if self.seconds else self.minutes * 60
 
     def __repr__(self):
         return f"<PracticeSession {self.date} {self.mode} {self.minutes}min>"
@@ -56,7 +70,13 @@ class Stats(db.Model):
     current_streak = db.Column(db.Integer, default=0)
     longest_streak = db.Column(db.Integer, default=0)
     total_minutes = db.Column(db.Integer, default=0)
+    total_seconds = db.Column(db.Integer, default=0)
     last_practice_date = db.Column(db.Date, nullable=True)
+
+    @property
+    def total_time_seconds(self):
+        """Total practice seconds — falls back to total_minutes*60 for pre-migration rows."""
+        return self.total_seconds if self.total_seconds else self.total_minutes * 60
 
     def __repr__(self):
         return f"<Stats streak={self.current_streak} total={self.total_minutes}min>"

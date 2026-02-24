@@ -72,7 +72,7 @@
       </div>
 
       <!-- Duration -->
-      <div class="text-sm text-gray-400 tabular-nums shrink-0">{{ session.minutes }} min</div>
+      <div class="text-sm text-gray-400 tabular-nums shrink-0">{{ session.duration_seconds | fmt_duration }}</div>
 
       <!-- Play recording button -->
       {% if session.recording_path %}
@@ -114,7 +114,7 @@
   <!-- Summary -->
   <p class="text-xs text-gray-700 text-center">
     {{ sessions | length }} session{{ 's' if sessions | length != 1 else '' }}
-    · {{ sessions | sum(attribute='minutes') }} minutes total
+    · {{ sessions | sum(attribute='duration_seconds') | fmt_duration }} total
     <span class="text-gray-800 mx-1">·</span>
     {{ sessions | selectattr('recording_path') | list | length }} recording{{ 's' if (sessions | selectattr('recording_path') | list | length) != 1 else '' }}
   </p>

@@ -27,6 +27,19 @@ app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
 db.init_app(app)
 
+@app.template_filter('fmt_duration')
+def fmt_duration_filter(total_seconds):
+    """Format a total-seconds value into a human-readable duration string."""
+    secs = int(total_seconds or 0)
+    h = secs // 3600
+    m = (secs % 3600) // 60
+    s = secs % 60
+    if h > 0:
+        return f"{h}h {m:02d}m {s:02d}s"
+    if m > 0:
+        return f"{m}m {s:02d}s"
+    return f"{s}s"
+
 # ── Pronunciation reference data ──────────────────────────────────────────────
 
 CONSONANTS = [
@@ -65,6 +78,7 @@ VOWELS = [
     ("בֵ",  "Tsere",        "ay",         "בֵּית",     "sāy"),
     ("בִ",  "Hiriq",        "ee",         "מִי",       "sēe"),
     ("בֹ",  "Holam",        "oh",         "תּוֹרָה",    "gō"),
+    ("בוֹ", "Holam Male",   "oh",         "תּוֹרָה",    "gō"),
     ("בוּ", "Shuruq",       "oo",         "שׁוּב",      "mōn"),
     ("בֻ",  "Qibbuts",      "oo",         "כֻּלָּם",    "mōn"),
     ("בְ",  "Shva",         "e / silent", "בְּרֵאשִׁית", "abōut"),
@@ -164,18 +178,20 @@ _VOWELFIRE_CONSONANTS = [
     'א','ב','ג','ד','ה','ז','ח','ט','י','כ','ל','מ','נ','ס','ע','פ','צ','ק','ר','שׁ','ת'
 ]
 _VOWELFIRE_MARKS = [
-    '\u05B8',  # kamatz   (āh)
-    '\u05B7',  # patach   (ah)
-    '\u05B6',  # segol    (eh)
-    '\u05B5',  # tsere    (ay)
-    '\u05B4',  # hiriq    (ee)
-    '\u05B9',  # holam    (oh)
-    '\u05BB',  # qibbuts  (oo)
-    '\u05B0',  # shva     (silent/e)
+    '\u05B8',          # kamatz      (āh)
+    '\u05B7',          # patach      (ah)
+    '\u05B6',          # segol       (eh)
+    '\u05B5',          # tsere       (ay)
+    '\u05B4',          # hiriq       (ee)
+    '\u05B9',          # holam       (oh)
+    '\u05D5\u05B9',    # holam male  (oh)  — consonant + vav + holam dot
+    '\u05BB',          # qibbuts     (oo)
+    '\u05D5\u05BC',    # shuruq      (oo)  — consonant + vav + dagesh
+    '\u05B0',          # shva        (silent/e)
 ]
 
 def generate_vowelfire_content():
-    """Return every base consonant paired with every vowel mark (168 items)."""
+    """Return every base consonant paired with every vowel suffix."""
     return [c + v for c in _VOWELFIRE_CONSONANTS for v in _VOWELFIRE_MARKS]
 
 # ── Training Plans (8 / 12 / 16 weeks) ─────────────────────────────────────────────
@@ -1106,6 +1122,7 @@ def get_or_create_stats(user=None):
             current_streak=0,
             longest_streak=0,
             total_minutes=0,
+            total_seconds=0,
             last_practice_date=None,
         )
         db.session.add(stats)
@@ -1324,11 +1341,32 @@ def drill(mode):
     import re as _re
     fallback = int(_re.search(r'\d+', recommended_time).group()) if _re.search(r'\d+', recommended_time) else 15
     target_minutes = targets.get(mode, fallback)
+    saved_interval = getattr(user, f'interval_{mode}', None)
     return render_template("drill.html", mode=mode, content=content,
                            recommended_time=recommended_time,
                            target_minutes=target_minutes,
+                           saved_interval=saved_interval,
                            vowels=VOWELS if mode == 'letters' else [],
                            consonants=CONSONANTS if mode == 'consonants' else [])
+
+
+@app.route("/api/save_interval", methods=["POST"])
+@login_required
+def save_interval():
+    """Save a user's preferred auto-play interval for a given drill mode."""
+    user = current_user()
+    data = request.get_json(force=True, silent=True) or {}
+    mode = data.get("mode", "")
+    try:
+        seconds = float(data.get("seconds", 0))
+    except (TypeError, ValueError):
+        return jsonify({"ok": False, "error": "invalid seconds"}), 400
+    attr = f"interval_{mode}"
+    if not hasattr(user, attr) or seconds <= 0:
+        return jsonify({"ok": False, "error": "unknown mode"}), 400
+    setattr(user, attr, seconds)
+    db.session.commit()
+    return jsonify({"ok": True})
 
 
 @app.route("/pronunciation")
@@ -1350,12 +1388,14 @@ def complete_session():
         return jsonify({"error": "No data provided"}), 400
 
     mode = data.get("mode", "letters")
+    elapsed_seconds = max(0, int(data.get("seconds", 0)))
     minutes = max(1, int(data.get("minutes", 1)))
     today = today_local()
     yesterday = today - timedelta(days=1)
 
     # Persist session
-    new_session = PracticeSession(date=today, mode=mode, minutes=minutes, user_id=user.id)
+    new_session = PracticeSession(date=today, mode=mode, minutes=minutes,
+                                  seconds=elapsed_seconds, user_id=user.id)
     db.session.add(new_session)
     db.session.flush()  # assigns PK without full commit
     session_id = new_session.id
@@ -1363,6 +1403,7 @@ def complete_session():
     # Update stats for this user
     stats = get_or_create_stats(user)
     stats.total_minutes += minutes
+    stats.total_seconds += elapsed_seconds
 
     # Streak logic
     if stats.last_practice_date is None:
@@ -1447,6 +1488,7 @@ def delete_session(session_id):
     if session_obj:
         stats = get_or_create_stats(user)
         stats.total_minutes = max(0, stats.total_minutes - session_obj.minutes)
+        stats.total_seconds = max(0, stats.total_seconds - session_obj.seconds)
         if session_obj.recording_path:
             filepath = os.path.join(basedir, "static", session_obj.recording_path)
             if os.path.exists(filepath):
@@ -1464,6 +1506,7 @@ def delete_mode_sessions(mode):
     stats = get_or_create_stats(user)
     for s in mode_sessions:
         stats.total_minutes = max(0, stats.total_minutes - s.minutes)
+        stats.total_seconds = max(0, stats.total_seconds - s.seconds)
         if s.recording_path:
             filepath = os.path.join(basedir, "static", s.recording_path)
             if os.path.exists(filepath):
@@ -1578,6 +1621,7 @@ def admin_delete_session(session_id):
     s = PracticeSession.query.get_or_404(session_id)
     stats = get_or_create_stats(current_user())
     stats.total_minutes = max(0, stats.total_minutes - s.minutes)
+    stats.total_seconds = max(0, stats.total_seconds - s.seconds)
     if s.recording_path:
         filepath = os.path.join(basedir, "static", s.recording_path)
         if os.path.exists(filepath):
@@ -1596,7 +1640,7 @@ def admin_edit_stats():
     stats = get_or_create_stats(target_user)
     streak = request.form.get("current_streak")
     longest = request.form.get("longest_streak")
-    total = request.form.get("total_minutes")
+    total = request.form.get("total_seconds")
     last = request.form.get("last_practice_date")
     try:
         if streak is not None:
@@ -1604,7 +1648,8 @@ def admin_edit_stats():
         if longest is not None:
             stats.longest_streak = max(0, int(longest))
         if total is not None:
-            stats.total_minutes = max(0, int(total))
+            stats.total_seconds = max(0, int(total))
+            stats.total_minutes = max(0, int(total) // 60)
         if last:
             stats.last_practice_date = date.fromisoformat(last)
         elif last == "":
@@ -1626,6 +1671,7 @@ def admin_reset_stats():
     stats.current_streak = 0
     stats.longest_streak = 0
     stats.total_minutes = 0
+    stats.total_seconds = 0
     stats.last_practice_date = None
     db.session.commit()
     flash("Stats reset to zero.", "success")
@@ -1650,6 +1696,14 @@ with app.app_context():
     _add_column_if_missing("user", "plan_weeks",     "plan_weeks INTEGER NOT NULL DEFAULT 8")
     _add_column_if_missing("user", "daily_minutes",  "daily_minutes INTEGER NOT NULL DEFAULT 0")
     _add_column_if_missing("user", "siddur_minutes", "siddur_minutes INTEGER NOT NULL DEFAULT 0")
+    _add_column_if_missing("practice_session", "seconds", "seconds INTEGER NOT NULL DEFAULT 0")
+    _add_column_if_missing("stats", "total_seconds", "total_seconds INTEGER NOT NULL DEFAULT 0")
+    _add_column_if_missing("user", "interval_consonants", "interval_consonants REAL NOT NULL DEFAULT 1.0")
+    _add_column_if_missing("user", "interval_vowelfire",  "interval_vowelfire REAL NOT NULL DEFAULT 1.0")
+    _add_column_if_missing("user", "interval_letters",    "interval_letters REAL NOT NULL DEFAULT 2.0")
+    _add_column_if_missing("user", "interval_words",      "interval_words REAL NOT NULL DEFAULT 2.0")
+    _add_column_if_missing("user", "interval_phrases",    "interval_phrases REAL NOT NULL DEFAULT 5.0")
+    _add_column_if_missing("user", "interval_prayer",     "interval_prayer REAL NOT NULL DEFAULT 5.0")
     os.makedirs(os.path.join(basedir, "static", "recordings"), exist_ok=True)
 
 if __name__ == "__main__":

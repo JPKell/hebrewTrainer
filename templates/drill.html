@@ -142,7 +142,7 @@
   <!-- Drill content card -->
   <div class="bg-gray-900 rounded-2xl border border-gray-800 overflow-hidden">
 
-    {% if mode in ['consonants', 'vowelfire', 'letters', 'words'] %}
+    {% if mode in ['consonants', 'vowelfire', 'letters', 'words', 'phrases', 'prayer'] %}
     <div class="flex flex-wrap items-center justify-center gap-4 px-4 py-3 border-b border-gray-800 bg-gray-950/40">
       <button id="auto-play-btn"
               class="px-3 py-1.5 bg-gray-800 hover:bg-gray-700 border border-gray-700
@@ -153,12 +153,12 @@
       <div class="flex items-center gap-2 text-xs text-gray-500">
         <span>Interval</span>
         <input id="auto-play-slider" type="range"
-               min="{% if mode in ['letters', 'words'] %}1{% else %}0.5{% endif %}"
-               max="{% if mode in ['letters', 'words'] %}5{% else %}1.5{% endif %}"
-               step="{% if mode in ['letters', 'words'] %}0.5{% else %}0.1{% endif %}"
-               value="{% if mode in ['letters', 'words'] %}2{% else %}1.0{% endif %}"
+               min="{% if mode in ['letters', 'words'] %}1{% elif mode in ['phrases', 'prayer'] %}3{% else %}0.5{% endif %}"
+               max="{% if mode == 'letters' %}7{% elif mode == 'words' %}5{% elif mode in ['phrases', 'prayer'] %}15{% else %}1.5{% endif %}"
+               step="{% if mode in ['letters', 'words'] %}0.5{% elif mode in ['phrases', 'prayer'] %}1{% else %}0.1{% endif %}"
+               value="{{ saved_interval }}"
                class="{% if mode == 'vowelfire' %}accent-purple-500{% elif mode == 'letters' %}accent-indigo-500{% elif mode == 'words' %}accent-violet-500{% else %}accent-rose-500{% endif %} w-40">
-        <span id="auto-play-value" class="text-gray-300 tabular-nums">{% if mode in ['letters', 'words'] %}2.0s{% else %}1.0s{% endif %}</span>
+        <span id="auto-play-value" class="text-gray-300 tabular-nums">{{ saved_interval }}s</span>
       </div>
     </div>
     {% endif %}
@@ -174,7 +174,7 @@
                         {% if mode in ['consonants', 'vowelfire'] %}text-8xl sm:text-9xl{% else %}text-5xl sm:text-6xl{% endif %}">
               {{ item }}
             </div>
-            {% if mode in ['consonants', 'vowelfire'] %}<div class="baseline-rule-line"></div>{% endif %}
+            {% if mode == 'consonants' %}<div class="baseline-rule-line"></div>{% endif %}
           </div>
         </div>
         {% else %}
