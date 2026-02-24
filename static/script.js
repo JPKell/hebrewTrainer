@@ -466,10 +466,10 @@ async function startRecording() {
     });
     audioChunks  = [];
     recordingBlob = null;
-    // Prefer opus; fall back to plain webm. 32 kbps ≈ 240 KB/min
+    // Prefer opus; fall back to plain webm. 16 kbps ≈ 120 KB/min (speech-quality)
     const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
       ? 'audio/webm;codecs=opus' : 'audio/webm';
-    mediaRecorder = new MediaRecorder(stream, { mimeType, audioBitsPerSecond: 32000 });
+    mediaRecorder = new MediaRecorder(stream, { mimeType, audioBitsPerSecond: 16000 });
     mediaRecorder.addEventListener('dataavailable', e => {
       if (e.data.size > 0) audioChunks.push(e.data);
     });
