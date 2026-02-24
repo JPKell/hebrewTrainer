@@ -1228,7 +1228,7 @@ def login():
     if request.method == "POST":
         username = request.form.get("username", "").strip()
         password = request.form.get("password", "")
-        user = User.query.filter_by(username=username).first()
+        user = User.query.filter(db.func.lower(User.username) == username.lower()).first()
         if user and user.check_password(password):
             session["user_id"] = user.id
             return redirect(url_for("dashboard"))
@@ -1246,7 +1246,7 @@ def register():
         password = request.form.get("password", "")
         if not username or not password:
             error = "Username and password are required."
-        elif User.query.filter_by(username=username).first():
+        elif User.query.filter(db.func.lower(User.username) == username.lower()).first():
             error = "That username is already taken."
         else:
             u = User(username=username)
@@ -1341,10 +1341,20 @@ def drill(mode):
     import re as _re
     fallback = int(_re.search(r'\d+', recommended_time).group()) if _re.search(r'\d+', recommended_time) else 15
     target_minutes = targets.get(mode, fallback)
+    today = today_local()
+    today_done_minutes = (
+        db.session.query(db.func.coalesce(db.func.sum(PracticeSession.minutes), 0))
+        .filter_by(user_id=user.id, date=today, mode=mode)
+        .scalar()
+        or 0
+    )
+    remaining_minutes = max(0, target_minutes - int(today_done_minutes))
+    target_satisfied = int(today_done_minutes) >= target_minutes
     saved_interval = getattr(user, f'interval_{mode}', None)
     return render_template("drill.html", mode=mode, content=content,
                            recommended_time=recommended_time,
-                           target_minutes=target_minutes,
+                           target_minutes=remaining_minutes,
+                           target_satisfied=target_satisfied,
                            saved_interval=saved_interval,
                            vowels=VOWELS if mode == 'letters' else [],
                            consonants=CONSONANTS if mode == 'consonants' else [])

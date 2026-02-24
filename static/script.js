@@ -7,6 +7,7 @@ let targetSeconds   = 0;   // set from plan — 0 means no target
 let isRunning       = false;
 let currentMode     = '';
 let sessionSaved    = false;
+let targetSatisfied = false;
 let vowelScramble     = true;
 let vowelGuideVisible = false;
 let autoPlayIntervalId = null;
@@ -32,10 +33,19 @@ function updateDisplay() {
 }
 
 function updateTargetUI() {
-  if (!targetSeconds) return;
   const label = el('target-label');
   const bar   = el('target-bar');
   if (!label || !bar) return;
+
+  if (!targetSeconds) {
+    if (targetSatisfied) {
+        label.textContent = '\u2713 Target reached';
+      label.className   = 'font-medium tabular-nums text-emerald-400';
+      bar.style.width   = '100%';
+      bar.style.opacity = '0.6';
+    }
+    return;
+  }
 
   const pct  = Math.min(100, Math.round(totalSeconds / targetSeconds * 100));
   bar.style.width = pct + '%';
@@ -697,6 +707,7 @@ function hideVowelGuide() {
 
 function initDrill(mode, targetMinutes) {
   currentMode = mode;
+  targetSatisfied = arguments.length > 2 ? !!arguments[2] : false;
   targetSeconds = (targetMinutes && targetMinutes > 0) ? targetMinutes * 60 : 0;
   updateDisplay();
   updateTargetUI();
