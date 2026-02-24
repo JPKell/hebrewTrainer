@@ -102,7 +102,9 @@ async function completeSession() {
   if (allItems.length && allItems[currentIndex]) {
     const label = el('translit-box')?.querySelector('p');
     if (label) label.textContent = 'Current item';
-    updateTranslitBox(allItems[currentIndex].dataset.original || '');
+    const renderedText = allItems[currentIndex].querySelector('.hebrew-text')?.textContent.trim()
+      || allItems[currentIndex].dataset.original || '';
+    updateTranslitBox(renderedText);
   }
 
   // Stop mic and wait a tick for the final chunk to be assembled
@@ -206,9 +208,11 @@ function showItem(index) {
   const speakBtn = el('speak-btn');
   if (speakBtn) { speakBtn.textContent = '🔊'; speakBtn.disabled = false; }
 
-  // Capture whichever item is currently visible — its answer will appear in the translit box
+  // Capture whichever item is currently visible — use the rendered text (may be scrambled)
   const visibleItem = Array.from(items).find(item => !item.classList.contains('hidden'));
-  const prevText = visibleItem ? (visibleItem.dataset.original || '') : null;
+  const prevText = visibleItem
+    ? (visibleItem.querySelector('.hebrew-text')?.textContent.trim() || visibleItem.dataset.original || '')
+    : null;
 
   items.forEach(item => item.classList.add('hidden'));
 
