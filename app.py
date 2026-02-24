@@ -1,6 +1,7 @@
 import os
 import re
 import json
+import random
 from functools import wraps
 from datetime import date, timedelta, datetime, timezone
 from flask import Flask, render_template, redirect, url_for, request, jsonify, flash, session
@@ -1074,10 +1075,23 @@ READING_TIPS = [
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
-def load_drills():
-    drills_path = os.path.join(basedir, "drills.json")
-    with open(drills_path, "r", encoding="utf-8") as f:
-        return json.load(f)
+DRILLS_DIR = os.path.join(basedir, "drills")
+SAMPLE_MODES = {"words", "phrases", "prayers"}
+SAMPLE_SIZE = 300
+
+def get_drill_content(mode):
+    """Load drill content for the given mode from its individual file.
+    For words, phrases, and prayers a random sample of up to SAMPLE_SIZE
+    items is returned each time so the client gets fresh variety.
+    """
+    drill_file = os.path.join(DRILLS_DIR, f"{mode}.json")
+    if not os.path.exists(drill_file):
+        return []
+    with open(drill_file, "r", encoding="utf-8") as f:
+        items = json.load(f)
+    if mode in SAMPLE_MODES and len(items) > SAMPLE_SIZE:
+        items = random.sample(items, SAMPLE_SIZE)
+    return items
 
 
 def current_user():
@@ -1322,7 +1336,7 @@ def dashboard():
 @app.route("/drill/<mode>")
 @login_required
 def drill(mode):
-    valid_modes = ["letters", "words", "phrases", "prayer", "consonants", "vowelfire", "siddur"]
+    valid_modes = ["letters", "words", "phrases", "prayer", "prayers", "consonants", "vowelfire", "siddur"]
     if mode not in valid_modes:
         return redirect(url_for("dashboard"))
     if mode == "siddur":
@@ -1330,7 +1344,7 @@ def drill(mode):
     elif mode == "vowelfire":
         content = generate_vowelfire_content()
     else:
-        content = load_drills().get(mode, [])
+        content = get_drill_content(mode)
     recommended_time = MODE_RECOMMENDED.get(mode, "15 min")
     user = current_user()
     plan = ALL_WEEKLY_PLANS.get(user.plan_weeks, _PLAN_8)
