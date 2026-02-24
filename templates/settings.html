@@ -1,0 +1,220 @@
+{% extends "base.html" %}
+
+{% block title %}Settings — Hebrew Trainer{% endblock %}
+
+{% block content %}
+<div class="space-y-8">
+
+  <!-- Header -->
+  <div>
+    <h1 class="text-2xl font-bold text-gray-100">Settings</h1>
+    <p class="text-gray-500 text-sm mt-1">Preferences for your account</p>
+  </div>
+
+  <!-- ── Hebrew Font ───────────────────────────────────────────────────────── -->
+  <div class="bg-gray-900 rounded-2xl border border-gray-800 p-6 space-y-4">
+    <h2 class="text-sm font-semibold text-gray-400 uppercase tracking-widest">Hebrew Font</h2>
+    <p class="text-sm text-gray-500">Choose how Hebrew text appears on drill cards.</p>
+    <div class="flex flex-wrap gap-3">
+      <button onclick="setFont('siddur')" id="font-btn-siddur"
+              class="px-5 py-2.5 rounded-xl text-sm font-medium border transition-colors
+                     bg-gray-800 border-gray-700 text-gray-300 hover:border-indigo-500 hover:text-indigo-300">
+        <span class="font-hebrew text-lg mr-2">אבג</span> Siddur (Frank Ruhl Libre)
+      </button>
+      <button onclick="setFont('modern')" id="font-btn-modern"
+              class="px-5 py-2.5 rounded-xl text-sm font-medium border transition-colors
+                     bg-gray-800 border-gray-700 text-gray-300 hover:border-indigo-500 hover:text-indigo-300">
+        <span style="font-family: 'Noto Sans Hebrew', sans-serif; font-size:1.1rem" class="mr-2">אבג</span> Modern (Noto Sans Hebrew)
+      </button>
+    </div>
+    <p class="text-xs text-gray-600">
+      Current: <span id="font-current" class="text-gray-400"></span>
+    </p>
+  </div>
+
+  <!-- ── Training Plan Length ──────────────────────────────────────────────── -->
+  <div class="bg-gray-900 rounded-2xl border border-gray-800 p-6 space-y-4">
+    <h2 class="text-sm font-semibold text-gray-400 uppercase tracking-widest">Training Plan</h2>
+    <p class="text-sm text-gray-500">How many weeks your training journey spans. This affects your week counter and progress tracking.</p>
+    <form method="POST" action="/settings">
+      <input type="hidden" name="action" value="plan">
+      <div class="flex flex-wrap gap-3">
+        {% for w in [8, 12, 16] %}
+        <label class="relative cursor-pointer">
+          <input type="radio" name="plan_weeks" value="{{ w }}"
+                 {% if user.plan_weeks == w %}checked{% endif %}
+                 class="sr-only peer">
+          <div class="px-6 py-3 rounded-xl text-sm font-medium border transition-colors
+                      bg-gray-800 border-gray-700 text-gray-300
+                      peer-checked:border-indigo-500 peer-checked:text-indigo-300 peer-checked:bg-indigo-900/30
+                      hover:border-gray-500 hover:text-gray-100">
+            {{ w }} weeks
+          </div>
+        </label>
+        {% endfor %}
+      </div>
+      <button type="submit"
+              class="mt-4 px-5 py-2 bg-indigo-700 hover:bg-indigo-600 text-white text-sm
+                     font-medium rounded-xl transition-colors">
+        Save Plan
+      </button>
+    </form>
+  </div>
+
+  <!-- ── Practice Time ────────────────────────────────────────────────────── -->
+  <div class="bg-gray-900 rounded-2xl border border-gray-800 p-6 space-y-4">
+    <h2 class="text-sm font-semibold text-gray-400 uppercase tracking-widest">Daily Practice Time</h2>
+    <p class="text-sm text-gray-500">
+      Set your daily total and the <span class="text-gray-400">minimum</span> Siddur reading time.
+      If the plan's Siddur block exceeds your minimum it will be used instead, scaling the
+      other drills proportionally within the total. Set either to
+      <span class="text-gray-400">0</span> to follow the plan's own recommendation.
+    </p>
+
+    <form method="POST" action="/settings" id="time-form" class="space-y-5">
+      <input type="hidden" name="action" value="time">
+
+      <div class="grid grid-cols-2 gap-4 max-w-sm">
+        <div class="space-y-1">
+          <label class="text-xs text-gray-500">Total daily (min)</label>
+          <input type="number" name="daily_minutes" id="inp-daily" min="0" max="180" step="5"
+                 value="{{ user.daily_minutes if user.daily_minutes else '' }}"
+                 placeholder="{{ plan_default_total }}"
+                 class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2
+                        text-gray-100 text-sm focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500">
+          <p class="text-xs text-gray-700">Plan default: {{ plan_default_total }} min</p>
+        </div>
+        <div class="space-y-1">
+          <label class="text-xs text-gray-500">Min. Siddur (min)</label>
+          <input type="number" name="siddur_minutes" id="inp-siddur" min="0" max="120" step="5"
+                 value="{{ user.siddur_minutes if user.siddur_minutes else '' }}"
+                 placeholder="{{ plan_default_siddur }}"
+                 class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2
+                        text-gray-100 text-sm focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500">
+          <p class="text-xs text-gray-700">Plan default: {{ plan_default_siddur }} min</p>
+        </div>
+      </div>
+
+      <!-- Live remaining preview -->
+      <div id="time-preview" class="hidden bg-gray-800/50 border border-gray-700/60 rounded-xl px-4 py-3 text-sm space-y-1">
+        <div class="flex items-center justify-between text-gray-500">
+          <span>Siddur reading (min. enforced)</span>
+          <span id="preview-siddur" class="tabular-nums text-teal-400 font-medium"></span>
+        </div>
+        <div class="flex items-center justify-between text-gray-500">
+          <span>Other drills (distributed)</span>
+          <span id="preview-other" class="tabular-nums text-indigo-400 font-medium"></span>
+        </div>
+        <div class="flex items-center justify-between border-t border-gray-700 pt-1 mt-1">
+          <span class="text-gray-400 font-medium">Total</span>
+          <span id="preview-total" class="tabular-nums text-gray-200 font-semibold"></span>
+        </div>
+      </div>
+
+      <button type="submit"
+              class="px-5 py-2 bg-indigo-700 hover:bg-indigo-600 text-white text-sm
+                     font-medium rounded-xl transition-colors">
+        Save Times
+      </button>
+    </form>
+  </div>
+
+  <!-- ── Change Password ───────────────────────────────────────────────────── -->
+  <div class="bg-gray-900 rounded-2xl border border-gray-800 p-6 space-y-4">
+    <h2 class="text-sm font-semibold text-gray-400 uppercase tracking-widest">Change Password</h2>
+    <form method="POST" action="/settings" class="space-y-3 max-w-sm">
+      <input type="hidden" name="action" value="password">
+      <div class="space-y-1">
+        <label class="text-xs text-gray-500">Current Password</label>
+        <input type="password" name="current_password" required autocomplete="current-password"
+               class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2
+                      text-gray-100 text-sm focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500">
+      </div>
+      <div class="space-y-1">
+        <label class="text-xs text-gray-500">New Password</label>
+        <input type="password" name="new_password" required autocomplete="new-password"
+               class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2
+                      text-gray-100 text-sm focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500">
+      </div>
+      <div class="space-y-1">
+        <label class="text-xs text-gray-500">Confirm New Password</label>
+        <input type="password" name="confirm_password" required autocomplete="new-password"
+               class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2
+                      text-gray-100 text-sm focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500">
+      </div>
+      <button type="submit"
+              class="px-5 py-2 bg-indigo-700 hover:bg-indigo-600 text-white text-sm
+                     font-medium rounded-xl transition-colors">
+        Update Password
+      </button>
+    </form>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function setFont(style) {
+  localStorage.setItem('hebrewFont', style);
+  if (style === 'modern') {
+    document.documentElement.setAttribute('data-font', 'modern');
+  } else {
+    document.documentElement.removeAttribute('data-font');
+  }
+  updateFontUI(style);
+}
+
+function updateFontUI(style) {
+  const siddurBtn = document.getElementById('font-btn-siddur');
+  const modernBtn = document.getElementById('font-btn-modern');
+  const label = document.getElementById('font-current');
+  const active   = 'border-indigo-500 text-indigo-300 bg-indigo-900/30';
+  const inactive = 'border-gray-700 text-gray-300 bg-gray-800';
+  if (style === 'modern') {
+    modernBtn.className = modernBtn.className.replace(inactive, active);
+    siddurBtn.className = siddurBtn.className.replace(active, inactive);
+    label.textContent = 'Modern (Noto Sans Hebrew)';
+  } else {
+    siddurBtn.className = siddurBtn.className.replace(inactive, active);
+    modernBtn.className = modernBtn.className.replace(active, inactive);
+    label.textContent = 'Siddur (Frank Ruhl Libre)';
+  }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  updateFontUI(localStorage.getItem('hebrewFont') || 'siddur');
+
+  // ── Practice time live preview ──────────────────────────────────────────
+  const inpDaily  = document.getElementById('inp-daily');
+  const inpSiddur = document.getElementById('inp-siddur');
+  const preview   = document.getElementById('time-preview');
+  const planDefaultTotal  = {{ plan_default_total }};
+  const planDefaultSiddur = {{ plan_default_siddur }};
+
+  function updateTimePreview() {
+    const daily  = parseInt(inpDaily.value)  || 0;
+    const siddur = parseInt(inpSiddur.value) || 0;
+    if (!daily && !siddur) { preview.classList.add('hidden'); return; }
+
+    // siddur setting is a floor — plan siddur (planDefaultSiddur) may be higher
+    const effectiveSiddur = Math.max(siddur, planDefaultSiddur);
+    const effectiveTotal  = daily  > 0 ? daily  : planDefaultTotal;
+    const other = Math.max(0, effectiveTotal - effectiveSiddur);
+
+    const siddurLabel = effectiveSiddur > siddur && siddur > 0
+      ? effectiveSiddur + ' min (plan exceeds your minimum)'
+      : effectiveSiddur + ' min';
+
+    document.getElementById('preview-siddur').textContent = siddurLabel;
+    document.getElementById('preview-other').textContent  = other + ' min';
+    document.getElementById('preview-total').textContent  = (effectiveSiddur + other) + ' min';
+    preview.classList.remove('hidden');
+  }
+
+  inpDaily?.addEventListener('input',  updateTimePreview);
+  inpSiddur?.addEventListener('input', updateTimePreview);
+  updateTimePreview();
+});
+</script>
+{% endblock %}

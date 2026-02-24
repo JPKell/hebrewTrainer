@@ -11,82 +11,69 @@
     <p class="text-gray-500 text-sm mt-1">Settings &amp; database editor</p>
   </div>
 
-  <!-- ── Font Setting ─────────────────────────────────────────────────────── -->
-  <div class="bg-gray-900 rounded-2xl border border-gray-800 p-6 space-y-4">
-    <h2 class="text-sm font-semibold text-gray-400 uppercase tracking-widest">Default Font</h2>
-    <p class="text-sm text-gray-500">
-      Sets the default Hebrew font for all users. Each user can still override
-      it via the <span class="text-gray-300">Aa</span> toggle on drill pages.
-    </p>
-    <div class="flex flex-wrap gap-3">
-      <button onclick="setDefaultFont('siddur')"
-              id="font-btn-siddur"
-              class="px-5 py-2.5 rounded-xl text-sm font-medium border transition-colors
-                     bg-gray-800 border-gray-700 text-gray-300 hover:border-indigo-500 hover:text-indigo-300">
-        <span class="font-hebrew text-lg mr-2">אבג</span> Siddur (Frank Ruhl Libre)
-      </button>
-      <button onclick="setDefaultFont('modern')"
-              id="font-btn-modern"
-              class="px-5 py-2.5 rounded-xl text-sm font-medium border transition-colors
-                     bg-gray-800 border-gray-700 text-gray-300 hover:border-indigo-500 hover:text-indigo-300">
-        <span style="font-family: 'Noto Sans Hebrew', sans-serif; font-size:1.1rem" class="mr-2">אבג</span> Modern (Noto Sans Hebrew)
-      </button>
-    </div>
-    <p class="text-xs text-gray-600" id="font-status">
-      Current default: <span id="font-current" class="text-gray-400"></span>
-    </p>
-  </div>
-
   <!-- ── Stats Editor ──────────────────────────────────────────────────────── -->
-  <div class="bg-gray-900 rounded-2xl border border-gray-800 p-6 space-y-4">
-    <div class="flex items-center justify-between">
-      <h2 class="text-sm font-semibold text-gray-400 uppercase tracking-widest">Stats</h2>
-      <form method="POST" action="/admin/stats/reset"
-            onsubmit="return confirm('Reset all stats to zero?')">
+  <div class="bg-gray-900 rounded-2xl border border-gray-800 p-6 space-y-6">
+    <h2 class="text-sm font-semibold text-gray-400 uppercase tracking-widest">Stats</h2>
+
+    {% for row in users_stats %}
+    <div class="{% if not loop.first %}border-t border-gray-800 pt-5{% endif %} space-y-3">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <span class="text-xs text-gray-600">#{{ row.user.id }}</span>
+          <span class="text-sm font-medium text-gray-300">{{ row.user.username }}</span>
+        </div>
+        <form method="POST" action="/admin/stats/reset"
+              onsubmit="return confirm('Reset stats for {{ row.user.username }}?')">
+          <input type="hidden" name="user_id" value="{{ row.user.id }}">
+          <button type="submit"
+                  class="text-xs px-3 py-1.5 bg-red-900/40 text-red-400 hover:bg-red-800/60
+                         border border-red-800/60 rounded-xl transition-colors">
+            Reset
+          </button>
+        </form>
+      </div>
+      <form method="POST" action="/admin/stats/edit" class="space-y-3">
+        <input type="hidden" name="user_id" value="{{ row.user.id }}">
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div class="space-y-1">
+            <label class="text-xs text-gray-500">Current Streak</label>
+            <input type="number" name="current_streak" min="0"
+                   value="{{ row.stats.current_streak }}"
+                   class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2
+                          text-gray-100 text-sm focus:outline-none focus:border-indigo-500">
+          </div>
+          <div class="space-y-1">
+            <label class="text-xs text-gray-500">Longest Streak</label>
+            <input type="number" name="longest_streak" min="0"
+                   value="{{ row.stats.longest_streak }}"
+                   class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2
+                          text-gray-100 text-sm focus:outline-none focus:border-indigo-500">
+          </div>
+          <div class="space-y-1">
+            <label class="text-xs text-gray-500">Total Minutes</label>
+            <input type="number" name="total_minutes" min="0"
+                   value="{{ row.stats.total_minutes }}"
+                   class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2
+                          text-gray-100 text-sm focus:outline-none focus:border-indigo-500">
+          </div>
+          <div class="space-y-1">
+            <label class="text-xs text-gray-500">Last Practice Date</label>
+            <input type="date" name="last_practice_date"
+                   value="{{ row.stats.last_practice_date.isoformat() if row.stats.last_practice_date else '' }}"
+                   class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2
+                          text-gray-100 text-sm focus:outline-none focus:border-indigo-500">
+          </div>
+        </div>
         <button type="submit"
-                class="text-xs px-3 py-1.5 bg-red-900/40 text-red-400 hover:bg-red-800/60
-                       border border-red-800/60 rounded-xl transition-colors">
-          Reset all
+                class="px-5 py-2 bg-indigo-700 hover:bg-indigo-600 text-white text-sm
+                       font-medium rounded-xl transition-colors">
+          Save
         </button>
       </form>
     </div>
-    <form method="POST" action="/admin/stats/edit" class="space-y-3">
-      <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <div class="space-y-1">
-          <label class="text-xs text-gray-500">Current Streak</label>
-          <input type="number" name="current_streak" min="0"
-                 value="{{ stats.current_streak }}"
-                 class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2
-                        text-gray-100 text-sm focus:outline-none focus:border-indigo-500">
-        </div>
-        <div class="space-y-1">
-          <label class="text-xs text-gray-500">Longest Streak</label>
-          <input type="number" name="longest_streak" min="0"
-                 value="{{ stats.longest_streak }}"
-                 class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2
-                        text-gray-100 text-sm focus:outline-none focus:border-indigo-500">
-        </div>
-        <div class="space-y-1">
-          <label class="text-xs text-gray-500">Total Minutes</label>
-          <input type="number" name="total_minutes" min="0"
-                 value="{{ stats.total_minutes }}"
-                 class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2
-                        text-gray-100 text-sm focus:outline-none focus:border-indigo-500">
-        </div>
-        <div class="space-y-1">
-          <label class="text-xs text-gray-500">Last Practice Date</label>
-          <input type="date" name="last_practice_date"
-                 value="{{ stats.last_practice_date.isoformat() if stats.last_practice_date else '' }}"
-                 class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2
-                        text-gray-100 text-sm focus:outline-none focus:border-indigo-500">
-        </div>
-      </div>
-      <button type="submit"
-              class="px-5 py-2 bg-indigo-700 hover:bg-indigo-600 text-white text-sm
-                     font-medium rounded-xl transition-colors">
-        Save Stats
-      </button>
-    </form>
+    {% else %}
+    <p class="text-sm text-gray-600">No users found.</p>
+    {% endfor %}
   </div>
 
   <!-- ── Session Editor ────────────────────────────────────────────────────── -->
@@ -103,9 +90,9 @@
                 data-mode="all">All</button>
         {% for mode in modes %}
         <button onclick="filterSessions('{{ mode }}')"
-                class="filter-btn text-xs px-2.5 py-1 rounded-lg bg-gray-800 text-gray-500
-                       hover:text-gray-300 transition-colors"
-                data-mode="{{ mode }}">{{ mode | capitalize }}</button>
+          class="filter-btn text-xs px-2.5 py-1 rounded-lg bg-gray-800 text-gray-500
+                 hover:text-gray-300 transition-colors"
+          data-mode="{{ mode }}">{{ 'Vowels' if mode == 'letters' else mode | capitalize }}</button>
         {% endfor %}
       </div>
     </div>
@@ -113,9 +100,11 @@
     <!-- Table header -->
     <div class="hidden sm:grid grid-cols-12 gap-2 px-4 py-2 text-xs text-gray-600 uppercase tracking-wider border-b border-gray-800">
       <div class="col-span-1">ID</div>
-      <div class="col-span-3">Date</div>
+      <div class="col-span-1">User</div>
+      <div class="col-span-2">Date</div>
       <div class="col-span-3">Mode</div>
-      <div class="col-span-2">Minutes</div>
+      <div class="col-span-1">Mins</div>
+      <div class="col-span-1">Rec</div>
       <div class="col-span-3 text-right">Actions</div>
     </div>
 
@@ -127,20 +116,23 @@
         <!-- View mode -->
         <div class="view-state grid grid-cols-12 gap-2 items-center">
           <div class="col-span-1 text-xs text-gray-600">#{{ s.id }}</div>
-          <div class="col-span-3 text-sm text-gray-400">{{ s.date.strftime('%Y-%m-%d') }}</div>
+          <div class="col-span-1 text-xs text-gray-500" title="user_id">{{ s.user_id or '—' }}</div>
+          <div class="col-span-2 text-sm text-gray-400">{{ s.date.strftime('%Y-%m-%d') }}</div>
           <div class="col-span-3">
             <span class="text-xs px-2 py-0.5 rounded-full
               {% if s.mode == 'consonants' %}bg-rose-900/60 text-rose-400
               {% elif s.mode == 'letters' %}bg-indigo-900/60 text-indigo-400
+              {% elif s.mode == 'vowelfire' %}bg-purple-900/60 text-purple-400
               {% elif s.mode == 'words' %}bg-violet-900/60 text-violet-400
               {% elif s.mode == 'phrases' %}bg-sky-900/60 text-sky-400
               {% elif s.mode == 'prayer' %}bg-amber-900/60 text-amber-400
               {% elif s.mode == 'siddur' %}bg-teal-900/60 text-teal-400
               {% else %}bg-gray-800 text-gray-400{% endif %}">
-              {{ s.mode }}
+              {{ 'vowels' if s.mode == 'letters' else ('vowel fire' if s.mode == 'vowelfire' else s.mode) }}
             </span>
           </div>
-          <div class="col-span-2 text-sm text-gray-300">{{ s.minutes }}m</div>
+          <div class="col-span-1 text-sm text-gray-300">{{ s.minutes }}m</div>
+          <div class="col-span-1 text-center" title="{{ s.recording_path or 'no recording' }}">{% if s.recording_path %}<span class="text-xs">🎙</span>{% endif %}</div>
           <div class="col-span-3 flex justify-end gap-2">
             <button onclick="startEdit({{ s.id }})"
                     class="text-xs px-2.5 py-1 bg-gray-800 hover:bg-gray-700 text-gray-400
@@ -163,7 +155,13 @@
               class="edit-state hidden space-y-2 pt-1">
           <div class="grid grid-cols-12 gap-2 items-end">
             <div class="col-span-1 text-xs text-gray-600 pb-2">#{{ s.id }}</div>
-            <div class="col-span-3">
+            <div class="col-span-1">
+              <label class="text-xs text-gray-600">User</label>
+              <input type="number" name="user_id" min="1" value="{{ s.user_id or '' }}"
+                     class="w-full bg-gray-800 border border-gray-700 rounded-lg px-2 py-1.5
+                            text-gray-100 text-xs focus:outline-none focus:border-indigo-500">
+            </div>
+            <div class="col-span-2">
               <label class="text-xs text-gray-600">Date</label>
               <input type="date" name="date" value="{{ s.date.isoformat() }}"
                      class="w-full bg-gray-800 border border-gray-700 rounded-lg px-2 py-1.5
@@ -175,16 +173,17 @@
                       class="w-full bg-gray-800 border border-gray-700 rounded-lg px-2 py-1.5
                              text-gray-100 text-xs focus:outline-none focus:border-indigo-500">
                 {% for mode in modes %}
-                <option value="{{ mode }}" {% if s.mode == mode %}selected{% endif %}>{{ mode }}</option>
+                <option value="{{ mode }}" {% if s.mode == mode %}selected{% endif %}>{{ 'vowels' if mode == 'letters' else ('vowel fire' if mode == 'vowelfire' else mode) }}</option>
                 {% endfor %}
               </select>
             </div>
-            <div class="col-span-2">
-              <label class="text-xs text-gray-600">Minutes</label>
+            <div class="col-span-1">
+              <label class="text-xs text-gray-600">Mins</label>
               <input type="number" name="minutes" min="1" value="{{ s.minutes }}"
                      class="w-full bg-gray-800 border border-gray-700 rounded-lg px-2 py-1.5
                             text-gray-100 text-xs focus:outline-none focus:border-indigo-500">
             </div>
+            <div class="col-span-1"></div>
             <div class="col-span-3 flex justify-end gap-2 pb-0.5">
               <button type="submit"
                       class="text-xs px-2.5 py-1.5 bg-emerald-700 hover:bg-emerald-600 text-white
@@ -197,6 +196,13 @@
                 Cancel
               </button>
             </div>
+          </div>
+          <div>
+            <label class="text-xs text-gray-600">Recording Path</label>
+            <input type="text" name="recording_path" value="{{ s.recording_path or '' }}"
+                   placeholder="recordings/session_X.webm"
+                   class="w-full bg-gray-800 border border-gray-700 rounded-lg px-2 py-1.5
+                          text-gray-100 text-xs focus:outline-none focus:border-indigo-500">
           </div>
         </form>
 
@@ -212,40 +218,6 @@
 
 {% block scripts %}
 <script>
-// ── Font default ──────────────────────────────────────────────────────────────
-function setDefaultFont(style) {
-  localStorage.setItem('hebrewFont', style);
-  if (style === 'modern') {
-    document.documentElement.setAttribute('data-font', 'modern');
-  } else {
-    document.documentElement.removeAttribute('data-font');
-  }
-  updateFontButtons(style);
-}
-
-function updateFontButtons(style) {
-  const siddurBtn = document.getElementById('font-btn-siddur');
-  const modernBtn = document.getElementById('font-btn-modern');
-  const label     = document.getElementById('font-current');
-  const active   = 'border-indigo-500 text-indigo-300 bg-indigo-900/30';
-  const inactive = 'border-gray-700 text-gray-300 bg-gray-800';
-  if (style === 'modern') {
-    modernBtn.className = modernBtn.className.replace(inactive, active);
-    siddurBtn.className = siddurBtn.className.replace(active, inactive);
-    label.textContent = 'Modern (Noto Sans Hebrew)';
-  } else {
-    siddurBtn.className = siddurBtn.className.replace(inactive, active);
-    modernBtn.className = modernBtn.className.replace(active, inactive);
-    label.textContent = 'Siddur (Frank Ruhl Libre)';
-  }
-}
-
-// Show current on load
-document.addEventListener('DOMContentLoaded', () => {
-  const current = localStorage.getItem('hebrewFont') || 'siddur';
-  updateFontButtons(current);
-});
-
 // ── Session inline edit ───────────────────────────────────────────────────────
 function startEdit(id) {
   document.querySelector(`#row-${id} .view-state`).classList.add('hidden');

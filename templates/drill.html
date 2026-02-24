@@ -1,11 +1,12 @@
 {% extends "base.html" %}
 
 {% block title %}
-  {% if mode == 'letters' %}Letter Drills
+  {% if mode == 'letters' %}Vowel Drills
   {% elif mode == 'words' %}Word Reading
   {% elif mode == 'phrases' %}Phrase Flow
   {% elif mode == 'prayer' %}Prayer Simulation
   {% elif mode == 'consonants' %}Rapid-Fire Consonants
+  {% elif mode == 'vowelfire' %}Rapid-Fire Vowels
   {% elif mode == 'siddur' %}Siddur Reading
   {% endif %} — Hebrew Trainer
 {% endblock %}
@@ -14,41 +15,48 @@
 <div class="space-y-5">
 
   <!-- Header -->
-  <div class="flex items-center gap-3 flex-wrap">
-    <a href="/" class="text-gray-600 hover:text-gray-300 transition-colors">‹</a>
-    <h1 class="text-xl font-semibold text-gray-100">
-      {% if mode == 'letters' %}Letter + Vowel Drills
+  <div class="flex items-center gap-3">
+    <a href="/" class="text-gray-600 hover:text-gray-300 transition-colors shrink-0">‹</a>
+    <h1 class="text-xl font-semibold text-gray-100 flex-1 text-center">
+      {% if mode == 'letters' %}Vowel Drills
       {% elif mode == 'words' %}Word Reading
       {% elif mode == 'phrases' %}Phrase Flow
       {% elif mode == 'prayer' %}Prayer Simulation
       {% elif mode == 'consonants' %}Rapid-Fire Consonants
+      {% elif mode == 'vowelfire' %}Rapid-Fire Vowels
       {% elif mode == 'siddur' %}Siddur Reading
       {% endif %}
     </h1>
-    <span class="text-xs px-2.5 py-1 rounded-full font-medium
-      {% if mode == 'letters' %}bg-indigo-900/60 text-indigo-400
-      {% elif mode == 'words' %}bg-violet-900/60 text-violet-400
-      {% elif mode == 'phrases' %}bg-sky-900/60 text-sky-400
-      {% elif mode == 'consonants' %}bg-rose-900/60 text-rose-400
-      {% elif mode == 'siddur' %}bg-teal-900/60 text-teal-400
-      {% else %}bg-amber-900/60 text-amber-400{% endif %}">
-      {% if mode == 'siddur' %}Timer only{% else %}{{ content | length }} items{% endif %}
-    </span>
-    <span class="text-xs px-2.5 py-1 rounded-full font-medium bg-gray-800/80 text-gray-500 border border-gray-700/50">
-      ⏱ {{ recommended_time }}
-    </span>
-    <button id="font-toggle-btn" onclick="toggleFont()"
-            class="text-xs px-2.5 py-1 rounded-full font-medium bg-gray-800/80 text-gray-500 border border-gray-700/50 hover:text-gray-300 hover:border-gray-600 transition-colors"
-            title="Switch Hebrew font style">
-      Aa
-    </button>
+    <!-- spacer to balance the back arrow and keep title visually centred -->
+    <span class="w-4 shrink-0"></span>
   </div>
 
   <!-- Timer card -->
   <div class="bg-gray-900 rounded-2xl border border-gray-800 p-6">
     <div id="timer-display"
-         class="timer-display text-6xl font-mono font-bold text-center text-gray-100 mb-6 tracking-widest">
+         class="timer-display text-6xl font-mono font-bold text-center text-gray-100 mb-4 tracking-widest">
       00:00
+    </div>
+
+    <!-- Target time progress -->
+    <div id="target-row" class="mb-6 px-2">
+      <div class="flex items-center justify-between text-xs mb-1.5">
+        <span class="text-gray-600 uppercase tracking-wide">Target</span>
+        <span id="target-label" class="font-medium tabular-nums text-gray-500">{{ target_minutes }} min remaining</span>
+      </div>
+      <div class="bg-gray-800 rounded-full h-1.5 overflow-hidden">
+        <div id="target-bar"
+             class="h-1.5 rounded-full transition-all duration-500
+             {% if mode == 'consonants' %}bg-rose-500
+             {% elif mode == 'letters' %}bg-indigo-500
+             {% elif mode == 'vowelfire' %}bg-purple-500
+             {% elif mode == 'words' %}bg-violet-500
+             {% elif mode == 'phrases' %}bg-sky-500
+             {% elif mode == 'siddur' %}bg-teal-500
+             {% else %}bg-amber-500{% endif %}"
+             style="width: 0%">
+        </div>
+      </div>
     </div>
 
     <div class="flex flex-wrap gap-3 justify-center">
@@ -68,12 +76,18 @@
               title="Record this session">
         &#127908; Record
       </button>
+      <button id="speak-btn"
+              class="px-5 py-2.5 bg-gray-800 hover:bg-gray-700 border border-gray-700
+                     text-gray-400 text-sm font-medium rounded-xl transition-colors hidden"
+              title="Read aloud">
+        &#128266;
+      </button>
       <button id="complete-btn"
               class="px-7 py-2.5 bg-emerald-700 hover:bg-emerald-600 active:bg-emerald-800
                      disabled:opacity-35 disabled:cursor-not-allowed
                      text-white font-medium rounded-xl transition-colors"
               disabled>
-        Complete Session
+        Complete
       </button>
     </div>
 
@@ -128,67 +142,23 @@
   <!-- Drill content card -->
   <div class="bg-gray-900 rounded-2xl border border-gray-800 overflow-hidden">
 
-    <!-- Navigation bar -->
-    <div class="flex items-center justify-between px-4 py-3 border-b border-gray-800">
-      <button id="prev-btn"
-              class="px-3 py-1.5 bg-gray-800 hover:bg-gray-700
-                     disabled:opacity-30 disabled:cursor-not-allowed
-                     text-gray-300 text-sm rounded-lg transition-colors">
-        ‹ Prev
+    {% if mode in ['consonants', 'vowelfire', 'letters', 'words'] %}
+    <div class="flex flex-wrap items-center justify-center gap-4 px-4 py-3 border-b border-gray-800 bg-gray-950/40">
+      <button id="auto-play-btn"
+              class="px-3 py-1.5 bg-gray-800 hover:bg-gray-700 border border-gray-700
+                     text-gray-400 text-sm rounded-lg transition-colors"
+              title="Auto-play random items">
+        ▶ Auto Play
       </button>
-
-      <div class="flex items-center gap-2">
-        <span id="item-counter" class="text-sm text-gray-500 tabular-nums">
-          1 / {{ content | length }}
-        </span>
-        <button id="shuffle-btn"
-                class="px-3 py-1.5 bg-gray-800 hover:bg-gray-700
-                       text-gray-400 text-sm rounded-lg transition-colors"
-                title="Shuffle order">
-          ⇄
-        </button>
-        <button id="speak-btn"
-                class="px-3 py-1.5 bg-gray-800 hover:bg-gray-700 border border-gray-700
-                       text-gray-400 text-sm rounded-lg transition-colors hidden"
-                title="Read aloud">
-          🔊
-        </button>
-        {% if mode == 'letters' %}
-        <button id="vowel-scramble-btn"
-                class="px-3 py-1.5 bg-gray-800 hover:bg-gray-700 border border-gray-700
-                       text-gray-400 text-sm rounded-lg transition-colors"
-                title="Scramble vowel order">
-          🔀 Vowels
-        </button>
-        <button id="vowel-guide-btn"
-                class="px-3 py-1.5 bg-gray-800 hover:bg-gray-700 border border-gray-700
-                       text-gray-400 text-sm rounded-lg transition-colors"
-                title="Show vowel quick reference">
-          📋 Guide
-        </button>
-        {% endif %}
-      </div>
-
-      <button id="next-btn"
-              class="px-3 py-1.5 bg-gray-800 hover:bg-gray-700
-                     disabled:opacity-30 disabled:cursor-not-allowed
-                     text-gray-300 text-sm rounded-lg transition-colors">
-        Next ›
-      </button>
-    </div>
-
-    <!-- Vowel guide panel (letters mode only, hidden by default) -->
-    {% if mode == 'letters' %}
-    <div id="vowel-guide-panel" class="hidden border-b border-gray-800 bg-gray-950/60 p-4">
-      <p class="text-xs text-gray-500 font-medium text-center mb-3 uppercase tracking-wider">Vowel Quick Reference</p>
-      <div class="grid grid-cols-4 sm:grid-cols-6 gap-2" dir="ltr">
-        {% for symbol, name, sound, heb_example, eng_example in vowels %}
-        <div class="bg-gray-800 rounded-lg p-2 text-center">
-          <div class="text-3xl font-hebrew text-indigo-300 leading-tight mb-1">{{ symbol }}</div>
-          <div class="text-xs text-gray-300 font-medium leading-tight">{{ sound }}</div>
-          <div class="text-xs text-gray-600 leading-tight italic">{{ eng_example }}</div>
-        </div>
-        {% endfor %}
+      <div class="flex items-center gap-2 text-xs text-gray-500">
+        <span>Interval</span>
+        <input id="auto-play-slider" type="range"
+               min="{% if mode in ['letters', 'words'] %}1{% else %}0.5{% endif %}"
+               max="{% if mode in ['letters', 'words'] %}5{% else %}1.5{% endif %}"
+               step="{% if mode in ['letters', 'words'] %}0.5{% else %}0.1{% endif %}"
+               value="{% if mode in ['letters', 'words'] %}2{% else %}1.0{% endif %}"
+               class="{% if mode == 'vowelfire' %}accent-purple-500{% elif mode == 'letters' %}accent-indigo-500{% elif mode == 'words' %}accent-violet-500{% else %}accent-rose-500{% endif %} w-40">
+        <span id="auto-play-value" class="text-gray-300 tabular-nums">{% if mode in ['letters', 'words'] %}2.0s{% else %}1.0s{% endif %}</span>
       </div>
     </div>
     {% endif %}
@@ -197,14 +167,14 @@
     <div id="drill-items-container" class="drill-content">
       {% for item in content %}
       <div class="drill-item hidden" data-original="{{ item }}">
-        {% if mode in ['consonants', 'letters'] %}
+        {% if mode in ['consonants', 'letters', 'vowelfire'] %}
         <div class="hebrew-baseline-wrap py-10 px-6 min-h-52">
           <div class="hebrew-baseline-inner">
             <div class="hebrew-text font-hebrew text-center text-gray-100
-                        {% if mode == 'consonants' %}text-8xl sm:text-9xl{% else %}text-5xl sm:text-6xl{% endif %}">
+                        {% if mode in ['consonants', 'vowelfire'] %}text-8xl sm:text-9xl{% else %}text-5xl sm:text-6xl{% endif %}">
               {{ item }}
             </div>
-            {% if mode == 'consonants' %}<div class="baseline-rule-line"></div>{% endif %}
+            {% if mode in ['consonants', 'vowelfire'] %}<div class="baseline-rule-line"></div>{% endif %}
           </div>
         </div>
         {% else %}
@@ -236,14 +206,52 @@
 
   </div>
 
-  <!-- Hint -->
+  <!-- Reference guide card -->
+  {% if mode in ['letters', 'consonants'] %}
+  <div class="bg-gray-900 rounded-2xl border border-gray-800 overflow-hidden">
+    <div class="flex items-center justify-between px-4 py-3">
+      <p class="text-xs text-gray-500 uppercase tracking-widest font-medium">
+        {% if mode == 'letters' %}Vowel{% else %}Consonant{% endif %} Reference
+      </p>
+      <button id="vowel-guide-btn"
+              class="px-3 py-1.5 bg-gray-800 hover:bg-gray-700 border border-gray-700
+                     text-gray-400 text-sm rounded-lg transition-colors"
+              title="Toggle quick reference">
+        📋 Guide
+      </button>
+    </div>
+    <div id="vowel-guide-panel" class="hidden border-t border-gray-800 p-4">
+      {% if mode == 'letters' %}
+      <div class="grid grid-cols-4 sm:grid-cols-6 gap-2" dir="ltr">
+        {% for symbol, name, sound, heb_example, eng_example in vowels %}
+        <div class="bg-gray-800 rounded-lg p-2 text-center">
+          <div class="text-3xl font-hebrew text-indigo-300 leading-tight mb-1">{{ symbol }}</div>
+          <div class="text-xs text-gray-300 font-medium leading-tight">{{ sound }}</div>
+          <div class="text-xs text-gray-600 leading-tight italic">{{ eng_example }}</div>
+        </div>
+        {% endfor %}
+      </div>
+      {% elif mode == 'consonants' %}
+      <div class="grid grid-cols-4 sm:grid-cols-6 gap-2" dir="ltr">
+        {% for letter, name, sound, example in consonants %}
+        <div class="bg-gray-800 rounded-lg p-2 text-center">
+          <div class="text-3xl font-hebrew text-rose-300 leading-tight mb-1">{{ letter }}</div>
+          <div class="text-xs text-gray-300 font-medium leading-tight">{{ name }}</div>
+          <div class="text-xs text-gray-600 leading-tight">{{ sound }}</div>
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Hint — dir=ltr on root so no bidi workaround needed -->
   <p class="text-center text-xs text-gray-700">
     Press <span class="text-gray-500">Start</span> when ready.
-    Navigate items, then <span class="text-gray-500">Complete</span> to save your session.
+    Tap the card to advance, then <span class="text-gray-500">Complete</span> to save.
     {% if mode == 'letters' %}<br class="mt-1">
-    Use <span class="text-gray-500">🔀 Vowels</span> to drill vowels in random order.
-    {% elif mode in ['words', 'phrases', 'prayer', 'consonants'] %}<br class="mt-1">
-    <span class="text-gray-600">Items shuffle randomly on load. Use ⇄ to re-shuffle.</span>
+    <span class="text-gray-600">Vowels shuffle randomly each item.</span>
     {% endif %}
   </p>
   {% endif %}
@@ -254,7 +262,7 @@
 {% block scripts %}
 <script>
   document.addEventListener('DOMContentLoaded', () => {
-    initDrill('{{ mode }}');
+    initDrill('{{ mode }}', {{ target_minutes }});
   });
 </script>
 {% endblock %}

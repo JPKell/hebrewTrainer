@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="he" dir="ltr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Login — Hebrew Trainer</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body class="dark bg-gray-950 text-gray-100 min-h-screen flex items-center justify-center px-4">
+
+  <div class="w-full max-w-sm">
+
+    <!-- Logo / Title -->
+    <div class="text-center mb-8">
+      <div class="text-5xl mb-3">🕍</div>
+      <h1 class="text-2xl font-bold text-indigo-400">Hebrew Trainer</h1>
+      <p class="text-gray-500 text-sm mt-1">Sign in to track your progress</p>
+    </div>
+
+    <!-- Error -->
+    {% if error %}
+      <div class="mb-4 p-3 rounded-xl text-sm bg-red-900/50 text-red-300 border border-red-800">
+        {{ error }}
+      </div>
+    {% endif %}
+
+    <!-- Login form -->
+    <form method="POST" action="/login" class="bg-gray-900 rounded-2xl border border-gray-800 p-6 space-y-4">
+      <div>
+        <label class="block text-sm text-gray-400 mb-1" for="username">Username</label>
+        <input
+          id="username" name="username" type="text" autocomplete="username"
+          required autofocus
+          class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-gray-100 text-sm focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+        />
+      </div>
+      <div>
+        <label class="block text-sm text-gray-400 mb-1" for="password">Password</label>
+        <input
+          id="password" name="password" type="password" autocomplete="current-password"
+          required
+          class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-gray-100 text-sm focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+        />
+      </div>
+      <button
+        type="submit"
+        class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-2 rounded-lg text-sm transition-colors"
+      >
+        Sign In
+      </button>
+    </form>
+
+    <p class="text-center text-sm text-gray-500 mt-5">
+      No account?
+      <a href="/register" class="text-indigo-400 hover:text-indigo-300 transition-colors">Create one</a>
+    </p>
+
+  </div>
+</body>
+</html>

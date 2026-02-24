@@ -3,11 +3,15 @@
 // ── Timer state ───────────────────────────────────────────────────────────────
 let timerInterval   = null;
 let totalSeconds    = 0;
+let targetSeconds   = 0;   // set from plan — 0 means no target
 let isRunning       = false;
 let currentMode     = '';
 let sessionSaved    = false;
-let vowelScramble     = false;
+let vowelScramble     = true;
 let vowelGuideVisible = false;
+let autoPlayIntervalId = null;
+let autoPlayEnabled    = false;
+let autoPlayDelayMs    = 1000;
 
 // ── Recording state ──────────────────────────────────────────────────────────────────────────────
 let mediaRecorder  = null;
@@ -24,6 +28,30 @@ function formatTime(s) {
 function updateDisplay() {
   const el = document.getElementById('timer-display');
   if (el) el.textContent = formatTime(totalSeconds);
+  updateTargetUI();
+}
+
+function updateTargetUI() {
+  if (!targetSeconds) return;
+  const label = el('target-label');
+  const bar   = el('target-bar');
+  if (!label || !bar) return;
+
+  const pct  = Math.min(100, Math.round(totalSeconds / targetSeconds * 100));
+  bar.style.width = pct + '%';
+
+  if (totalSeconds >= targetSeconds) {
+    label.textContent = '\u2713 Target reached';
+    label.className   = 'font-medium tabular-nums text-emerald-400';
+    bar.style.opacity = '0.6';
+  } else {
+    const remaining = targetSeconds - totalSeconds;
+    const m = Math.floor(remaining / 60);
+    const s = remaining % 60;
+    label.textContent = (m > 0 ? m + 'm ' : '') + s + 's remaining';
+    label.className   = 'font-medium tabular-nums text-gray-500';
+    bar.style.opacity = '1';
+  }
 }
 
 function el(id) { return document.getElementById(id); }
@@ -67,6 +95,7 @@ function pauseTimer() {
 async function completeSession() {
   if (sessionSaved) return;
   sessionSaved = true;
+  stopAutoPlay();
 
   // Reveal the current item's answer in the translit box on session end
   const allItems = document.querySelectorAll('.drill-item');
@@ -187,9 +216,6 @@ function showItem(index) {
   currentIndex = ((index % items.length) + items.length) % items.length;
   items[currentIndex].classList.remove('hidden');
 
-  if (el('prev-btn'))     el('prev-btn').disabled  = false;
-  if (el('next-btn'))     el('next-btn').disabled  = false;
-  if (el('item-counter')) el('item-counter').textContent = `${currentIndex + 1} / ${items.length}`;
   renderItemContent(currentIndex);
   updateTranslitBox(prevText);
 }
@@ -377,6 +403,57 @@ function toggleVowelScramble() {
   renderItemContent(currentIndex);
 }
 
+// ── Consonant auto-play ─────────────────────────────────────────────────────
+function updateAutoPlayUI(enabled) {
+  const btn = el('auto-play-btn');
+  if (!btn) return;
+  btn.textContent = enabled ? '⏸ Auto Play' : '▶ Auto Play';
+  btn.classList.toggle('bg-rose-700', enabled);
+  btn.classList.toggle('text-white', enabled);
+  btn.classList.toggle('border-rose-500', enabled);
+  btn.classList.toggle('bg-gray-800', !enabled);
+  btn.classList.toggle('text-gray-400', !enabled);
+  btn.classList.toggle('border-gray-700', !enabled);
+  btn.title = enabled ? 'Auto-play is running — click to stop' : 'Auto-play random consonants';
+}
+
+function setAutoPlayDelay(seconds) {
+  autoPlayDelayMs = Math.round(seconds * 1000);
+  const label = el('auto-play-value');
+  if (label) label.textContent = `${seconds.toFixed(1)}s`;
+  if (autoPlayEnabled) startAutoPlay();
+}
+
+function showRandomItem() {
+  const items = document.querySelectorAll('.drill-item');
+  if (!items.length || items.length < 2) return;
+  let nextIndex = currentIndex;
+  while (nextIndex === currentIndex) {
+    nextIndex = Math.floor(Math.random() * items.length);
+  }
+  showItem(nextIndex);
+}
+
+function startAutoPlay() {
+  if (autoPlayIntervalId) clearInterval(autoPlayIntervalId);
+  autoPlayEnabled = true;
+  updateAutoPlayUI(true);
+  autoPlayIntervalId = setInterval(showRandomItem, autoPlayDelayMs);
+}
+
+function stopAutoPlay() {
+  if (autoPlayIntervalId) clearInterval(autoPlayIntervalId);
+  autoPlayIntervalId = null;
+  if (!autoPlayEnabled) return;
+  autoPlayEnabled = false;
+  updateAutoPlayUI(false);
+}
+
+function toggleAutoPlay() {
+  if (autoPlayEnabled) stopAutoPlay();
+  else startAutoPlay();
+}
+
 // ── Public init (called from drill.html inline script) ───────────────────────
 
 // ── Recording ────────────────────────────────────────────────────────────────
@@ -485,18 +562,33 @@ function hideVowelGuide() {
   }
 }
 
-function initDrill(mode) {
+function initDrill(mode, targetMinutes) {
   currentMode = mode;
+  targetSeconds = (targetMinutes && targetMinutes > 0) ? targetMinutes * 60 : 0;
   updateDisplay();
+  updateTargetUI();
 
   el('start-btn')?.addEventListener('click',    startTimer);
   el('pause-btn')?.addEventListener('click',    pauseTimer);
   el('complete-btn')?.addEventListener('click', completeSession);
-  el('vowel-scramble-btn')?.addEventListener('click', toggleVowelScramble);
   el('record-btn')?.addEventListener('click',   toggleRecording);
   el('vowel-guide-btn')?.addEventListener('click', toggleVowelGuide);
   el('speak-btn')?.addEventListener('click', speakCurrent);
   updateFontToggleBtn();
+
+  if (['consonants', 'vowelfire', 'letters', 'words'].includes(mode)) {
+    const slider = el('auto-play-slider');
+    if (slider) {
+      const initial = parseFloat(slider.value || '1.0');
+      setAutoPlayDelay(initial);
+      slider.addEventListener('input', () => {
+        const value = parseFloat(slider.value || '1.0');
+        setAutoPlayDelay(value);
+      });
+    }
+    el('auto-play-btn')?.addEventListener('click', toggleAutoPlay);
+    updateAutoPlayUI(false);
+  }
 
   // Show speak button only if browser supports Web Speech API
   if (window.speechSynthesis) {
@@ -515,17 +607,13 @@ function initDrill(mode) {
   }
 
   // Auto-shuffle for modes where random order improves practice
-  if (['words', 'phrases', 'prayer', 'consonants'].includes(mode)) {
+  if (['words', 'phrases', 'prayer', 'consonants', 'vowelfire', 'letters'].includes(mode)) {
     shuffleItems();
   }
 }
 
 // ── Boot ──────────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
-  el('prev-btn')?.addEventListener('click',    prevItem);
-  el('next-btn')?.addEventListener('click',    nextItem);
-  el('shuffle-btn')?.addEventListener('click', shuffleItems);
-
   if (document.querySelectorAll('.drill-item').length > 0) showItem(0);
 });
 // ── Keyboard navigation ───────────────────────────────────────────────────────────

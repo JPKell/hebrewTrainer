@@ -12,12 +12,12 @@
       <p class="text-gray-500 text-sm mt-1">Practice history · manage recordings</p>
     </div>
     {% if mode_filter != 'all' and sessions %}
-    <form method="POST" action="/sessions/delete_mode/{{ mode_filter }}"
-          onsubmit="return confirm('Delete ALL {{ mode_filter }} sessions and recordings? This cannot be undone.')">
+        <form method="POST" action="/sessions/delete_mode/{{ mode_filter }}"
+          onsubmit="return confirm('Delete ALL {{ 'vowels' if mode_filter == 'letters' else mode_filter }} sessions and recordings? This cannot be undone.')">
       <button type="submit"
               class="text-xs px-3 py-1.5 bg-red-900/40 text-red-400 hover:bg-red-800/60
                      border border-red-800/60 rounded-xl transition-colors mt-1">
-        Clear all {{ mode_filter }}
+        Clear all {{ 'vowels' if mode_filter == 'letters' else mode_filter }}
       </button>
     </form>
     {% endif %}
@@ -36,13 +36,14 @@
               {% if mode_filter == mode %}
                 {% if mode == 'consonants' %}bg-rose-700 text-white
                 {% elif mode == 'letters' %}bg-indigo-700 text-white
+                {% elif mode == 'vowelfire' %}bg-purple-700 text-white
                 {% elif mode == 'words' %}bg-violet-700 text-white
                 {% elif mode == 'phrases' %}bg-sky-700 text-white
                 {% elif mode == 'prayer' %}bg-amber-700 text-white
                 {% elif mode == 'siddur' %}bg-teal-700 text-white
                 {% else %}bg-gray-700 text-white{% endif %}
               {% else %}bg-gray-900 text-gray-500 hover:text-gray-300 border border-gray-800{% endif %}">
-      {{ mode | capitalize }}
+      {{ 'Vowels' if mode == 'letters' else ('Vowel Fire' if mode == 'vowelfire' else mode | capitalize) }}
     </a>
     {% endfor %}
   </div>
@@ -58,6 +59,7 @@
       <span class="w-2.5 h-2.5 rounded-full shrink-0
         {% if session.mode == 'consonants' %}bg-rose-500
         {% elif session.mode == 'letters' %}bg-indigo-500
+        {% elif session.mode == 'vowelfire' %}bg-purple-500
         {% elif session.mode == 'words' %}bg-violet-500
         {% elif session.mode == 'phrases' %}bg-sky-500
         {% elif session.mode == 'siddur' %}bg-teal-500
@@ -65,7 +67,7 @@
 
       <!-- Mode + date -->
       <div class="flex-1 min-w-0">
-        <div class="text-sm text-gray-200 font-medium capitalize">{{ session.mode }}</div>
+        <div class="text-sm text-gray-200 font-medium capitalize">{{ 'vowels' if session.mode == 'letters' else ('vowel fire' if session.mode == 'vowelfire' else session.mode) }}</div>
         <div class="text-xs text-gray-600">{{ session.date.strftime('%b %-d, %Y') }}</div>
       </div>
 
@@ -121,7 +123,7 @@
   <!-- Empty state -->
   <div class="text-center py-16 text-gray-600">
     <div class="text-5xl mb-4">📭</div>
-    <div class="text-sm">No sessions yet{% if mode_filter != 'all' %} for {{ mode_filter }}{% endif %}</div>
+    <div class="text-sm">No sessions yet{% if mode_filter != 'all' %} for {{ 'vowels' if mode_filter == 'letters' else mode_filter }}{% endif %}</div>
     <a href="/" class="text-sm text-indigo-500 hover:text-indigo-400 transition-colors mt-3 inline-block">
       Start your first session →
     </a>

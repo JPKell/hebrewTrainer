@@ -34,20 +34,20 @@
   <div class="bg-gray-900 border border-indigo-800/50 rounded-2xl p-5">
     <div class="flex items-start justify-between mb-3">
       <div>
-        <div class="text-xs font-semibold text-indigo-400 uppercase tracking-widest">8-Week Plan</div>
+        <div class="text-xs font-semibold text-indigo-400 uppercase tracking-widest">{{ plan_weeks }}-Week Plan</div>
         <div class="text-gray-100 font-semibold mt-1">Week {{ current_week }} — {{ current_week_plan.title }}</div>
         <div class="text-xs text-gray-600 mt-0.5">{{ current_week_plan.phase }}</div>
       </div>
       <div class="text-right shrink-0 ml-4">
         <div class="text-3xl font-bold text-indigo-400">{{ current_week }}</div>
-        <div class="text-xs text-gray-600">of 8</div>
+        <div class="text-xs text-gray-600">of {{ plan_weeks }}</div>
       </div>
     </div>
 
     <!-- Progress bar -->
     <div class="bg-gray-800 rounded-full h-1.5 mb-3">
       <div class="bg-indigo-500 h-1.5 rounded-full transition-all"
-           style="width: {{ (((current_week - 1) / 8) * 100) | round | int }}%"></div>
+           style="width: {{ (((current_week - 1) / plan_weeks) * 100) | round | int }}%"></div>
     </div>
 
     <!-- Milestone -->
@@ -73,12 +73,13 @@
         <div class="flex items-center gap-3">
           <span class="text-xs w-20 shrink-0 capitalize
             {% if row.done > 0 %}text-gray-400{% else %}text-gray-700{% endif %}">
-            {{ row.mode }}
+            {{ 'vowels' if row.mode == 'letters' else row.mode }}
           </span>
           <div class="flex-1 bg-gray-800 rounded-full h-1.5 overflow-hidden">
             <div class="h-1.5 rounded-full transition-all
               {% if row.mode == 'consonants' %}bg-rose-500
               {% elif row.mode == 'letters' %}bg-indigo-500
+              {% elif row.mode == 'vowelfire' %}bg-purple-500
               {% elif row.mode == 'words' %}bg-violet-500
               {% elif row.mode == 'phrases' %}bg-sky-500
               {% elif row.mode == 'siddur' %}bg-teal-500
@@ -104,17 +105,18 @@
       <a href="/drill/{{ mode }}"
          class="text-sm px-4 py-1.5 rounded-xl font-medium transition-colors
          {% if mode == 'letters' %}bg-indigo-900/60 text-indigo-400 hover:bg-indigo-800/80
+         {% elif mode == 'vowelfire' %}bg-purple-900/60 text-purple-400 hover:bg-purple-800/80
          {% elif mode == 'words' %}bg-violet-900/60 text-violet-400 hover:bg-violet-800/80
          {% elif mode == 'phrases' %}bg-sky-900/60 text-sky-400 hover:bg-sky-800/80
          {% elif mode == 'consonants' %}bg-rose-900/60 text-rose-400 hover:bg-rose-800/80
          {% elif mode == 'siddur' %}bg-teal-900/60 text-teal-400 hover:bg-teal-800/80
          {% else %}bg-amber-900/60 text-amber-400 hover:bg-amber-800/80{% endif %}">
-        {{ mode | capitalize }}
+        {{ 'Vowels' if mode == 'letters' else mode | capitalize }}
       </a>
       {% endfor %}
     </div>
 
-    <a href="/guide" class="text-xs text-indigo-500 hover:text-indigo-400 transition-colors">View full 8-week plan →</a>
+    <a href="/guide" class="text-xs text-indigo-500 hover:text-indigo-400 transition-colors">View full {{ plan_weeks }}-week plan →</a>
   </div>
 
   <!-- Drill modes -->
@@ -140,10 +142,22 @@
           <span class="text-xl font-hebrew text-indigo-300">אבג</span>
         </div>
         <div class="flex-1 min-w-0">
-          <div class="font-semibold text-gray-100">Letter + Vowel Drills</div>
-          <div class="text-sm text-gray-500 mt-0.5">Every letter with all vowel points</div>
+          <div class="font-semibold text-gray-100">Vowel Drills</div>
+          <div class="text-sm text-gray-500 mt-0.5">Every vowel on base consonants</div>
         </div>
         <div class="text-gray-600 group-hover:text-indigo-400 transition-colors text-lg">›</div>
+      </a>
+
+      <a href="/drill/vowelfire"
+         class="drill-card group flex items-center gap-4 bg-gray-900 hover:bg-gray-800/80 border border-gray-800 hover:border-purple-700/60 rounded-2xl p-5 transition-all">
+        <div class="w-12 h-12 rounded-xl bg-purple-950 flex items-center justify-center shrink-0">
+          <span class="text-xl font-hebrew text-purple-300">בָגַ</span>
+        </div>
+        <div class="flex-1 min-w-0">
+          <div class="font-semibold text-gray-100">Rapid-Fire Vowels</div>
+          <div class="text-sm text-gray-500 mt-0.5">Random consonant + vowel pairs, auto-play</div>
+        </div>
+        <div class="text-gray-600 group-hover:text-purple-400 transition-colors text-lg">›</div>
       </a>
 
       <a href="/drill/words"
@@ -208,12 +222,13 @@
         <div class="flex items-center gap-3">
           <span class="w-2 h-2 rounded-full
             {% if session.mode == 'letters' %}bg-indigo-500
+            {% elif session.mode == 'vowelfire' %}bg-purple-500
             {% elif session.mode == 'words' %}bg-violet-500
             {% elif session.mode == 'phrases' %}bg-sky-500
             {% elif session.mode == 'consonants' %}bg-rose-500
             {% elif session.mode == 'siddur' %}bg-teal-500
             {% else %}bg-amber-500{% endif %}"></span>
-          <span class="text-sm text-gray-300 capitalize">{{ session.mode }}</span>
+          <span class="text-sm text-gray-300 capitalize">{{ 'vowels' if session.mode == 'letters' else ('vowel fire' if session.mode == 'vowelfire' else session.mode) }}</span>
         </div>
         <div class="flex items-center gap-4 text-sm text-gray-500">
           <span>{{ session.minutes }} min</span>

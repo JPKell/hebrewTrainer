@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}8-Week Training Plan — Hebrew Trainer{% endblock %}
+{% block title %}{{ plan_weeks }}-Week Training Plan — Hebrew Trainer{% endblock %}
 
 {% block content %}
 <div class="space-y-6" dir="ltr">
@@ -9,7 +9,7 @@
   <div class="flex items-start gap-3">
     <a href="/" class="text-gray-600 hover:text-gray-300 transition-colors mt-1 shrink-0">‹</a>
     <div>
-      <h1 class="text-2xl font-bold text-gray-100">8-Week Training Plan</h1>
+      <h1 class="text-2xl font-bold text-gray-100">{{ plan_weeks }}-Week Training Plan</h1>
       <p class="text-gray-500 text-sm mt-1">Sight reading — eyes and mouth, not translation</p>
     </div>
   </div>
@@ -22,38 +22,91 @@
         {% if start_date %}Started {{ start_date.strftime('%b %-d, %Y') }}{% else %}Start your first session to begin tracking{% endif %}
       </span>
     </div>
-    <div class="text-3xl font-bold text-white mt-2">Week {{ current_week }} <span class="text-indigo-600 text-xl font-normal">of 8</span></div>
+    <div class="text-3xl font-bold text-white mt-2">
+      Week {{ current_week }}
+      <span class="text-indigo-600 text-xl font-normal">of {{ plan_weeks }}</span>
+    </div>
     <div class="text-indigo-300 font-medium mt-0.5">{{ weekly_plan[current_week - 1].title }}</div>
-    <div class="text-indigo-500 text-sm">{{ weekly_plan[current_week - 1].phase }}</div>
+    <div class="text-indigo-500 text-sm">{{ weekly_plan[current_week - 1].phase_short }}</div>
 
     <!-- Progress bar -->
     <div class="mt-4 bg-indigo-900/60 rounded-full h-2">
       <div class="bg-indigo-400 h-2 rounded-full transition-all"
-           style="width: {{ (((current_week - 1) / 8) * 100) | round | int }}%"></div>
+           style="width: {{ ((current_week - 1) / plan_weeks * 100) | round | int }}%"></div>
     </div>
     <div class="flex justify-between text-xs text-indigo-800 mt-1.5">
       <span>Week 1</span>
-      <span>Week 8</span>
+      <span>Week {{ plan_weeks }}</span>
     </div>
   </div>
 
   <!-- Strategy callout -->
   <div class="bg-gray-900 border border-gray-800 rounded-2xl p-5 space-y-2 text-sm">
     <p class="text-gray-100 font-semibold text-base">The Goal</p>
-    <p class="text-gray-400">You are building <span class="text-gray-200">letter + vowel instant recognition</span>, <span class="text-gray-200">syllable blending without hesitation</span>, and <span class="text-gray-200">prayer-book fluency at minyan pace</span>.</p>
-    <p class="text-gray-600 italic">Think of it like learning to play scales before playing music.</p>
+    <p class="text-gray-400">
+      You are building <span class="text-gray-200">vowel instant recognition</span>,
+      <span class="text-gray-200">syllable blending without hesitation</span>, and
+      <span class="text-gray-200">prayer-book fluency at minyan pace</span>.
+    </p>
+    <p class="text-gray-600 italic">The Siddur is the anchor. Everything else supports it.</p>
+
+    {% if plan_weeks == 8 %}
     <div class="grid grid-cols-2 gap-3 pt-2">
       <div class="bg-gray-800/60 rounded-xl px-4 py-3">
-        <div class="text-xs text-gray-600 uppercase tracking-wide mb-1">Month 1 · Weeks 1–4</div>
-        <div class="text-sm text-gray-300 font-medium">Automatic Decoding</div>
+        <div class="text-xs text-gray-600 uppercase tracking-wide mb-1">Weeks 1–4</div>
+        <div class="text-sm text-gray-300 font-medium">Stability + Blending</div>
         <div class="text-xs text-gray-500 mt-0.5">No hesitation on letters or vowels</div>
       </div>
       <div class="bg-gray-800/60 rounded-xl px-4 py-3">
-        <div class="text-xs text-gray-600 uppercase tracking-wide mb-1">Month 2 · Weeks 5–8</div>
-        <div class="text-sm text-gray-300 font-medium">Siddur Fluency</div>
+        <div class="text-xs text-gray-600 uppercase tracking-wide mb-1">Weeks 5–8</div>
+        <div class="text-sm text-gray-300 font-medium">Prayer + Endurance</div>
         <div class="text-xs text-gray-500 mt-0.5">Near-minyan reading pace</div>
       </div>
     </div>
+
+    {% elif plan_weeks == 12 %}
+    <div class="grid grid-cols-3 gap-3 pt-2">
+      <div class="bg-gray-800/60 rounded-xl px-4 py-3">
+        <div class="text-xs text-gray-600 uppercase tracking-wide mb-1">Weeks 1–4</div>
+        <div class="text-sm text-gray-300 font-medium">Automaticity</div>
+        <div class="text-xs text-gray-500 mt-0.5">Letters + vowels automatic</div>
+      </div>
+      <div class="bg-gray-800/60 rounded-xl px-4 py-3">
+        <div class="text-xs text-gray-600 uppercase tracking-wide mb-1">Weeks 5–8</div>
+        <div class="text-sm text-gray-300 font-medium">Phrase Lock-In</div>
+        <div class="text-xs text-gray-500 mt-0.5">Prayer fluency + endurance</div>
+      </div>
+      <div class="bg-gray-800/60 rounded-xl px-4 py-3">
+        <div class="text-xs text-gray-600 uppercase tracking-wide mb-1">Weeks 9–12</div>
+        <div class="text-sm text-gray-300 font-medium">Liturgical Confidence</div>
+        <div class="text-xs text-gray-500 mt-0.5">Minyan-level steadiness</div>
+      </div>
+    </div>
+
+    {% else %}{# 16-week #}
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
+      <div class="bg-gray-800/60 rounded-xl px-4 py-3">
+        <div class="text-xs text-gray-600 uppercase tracking-wide mb-1">Wks 1–4</div>
+        <div class="text-sm text-gray-300 font-medium">Decode + Anchor</div>
+        <div class="text-xs text-gray-500 mt-0.5">Automatic decoding</div>
+      </div>
+      <div class="bg-gray-800/60 rounded-xl px-4 py-3">
+        <div class="text-xs text-gray-600 uppercase tracking-wide mb-1">Wks 5–8</div>
+        <div class="text-sm text-gray-300 font-medium">Word Automaticity</div>
+        <div class="text-xs text-gray-500 mt-0.5">Whole-word recognition</div>
+      </div>
+      <div class="bg-gray-800/60 rounded-xl px-4 py-3">
+        <div class="text-xs text-gray-600 uppercase tracking-wide mb-1">Wks 9–12</div>
+        <div class="text-sm text-gray-300 font-medium">Liturgical Rhythm</div>
+        <div class="text-xs text-gray-500 mt-0.5">Near-minyan pace</div>
+      </div>
+      <div class="bg-gray-800/60 rounded-xl px-4 py-3">
+        <div class="text-xs text-gray-600 uppercase tracking-wide mb-1">Wks 13–16</div>
+        <div class="text-sm text-gray-300 font-medium">Minyan Conditioning</div>
+        <div class="text-xs text-gray-500 mt-0.5">Calm, automatic fluency</div>
+      </div>
+    </div>
+    {% endif %}
   </div>
 
   <!-- Week cards -->
@@ -125,7 +178,7 @@
 
             <!-- Week goal -->
             <div class="flex items-start gap-2">
-              <span class="text-amber-400 mt-0.5 shrink-0">🎯</span>
+              <span class="text-amber-400 mt-0.5 shrink-0">&#127919;</span>
               <div>
                 <div class="text-xs text-gray-600 uppercase tracking-wide mb-0.5">Week goal</div>
                 <p class="text-sm text-gray-300">{{ week.milestone }}</p>
@@ -147,7 +200,7 @@
 
             <!-- Tip -->
             <div class="flex items-start gap-2 bg-gray-800/30 border border-gray-800/60 rounded-xl px-4 py-3">
-              <span class="shrink-0">💡</span>
+              <span class="shrink-0">&#128161;</span>
               <p class="text-sm text-gray-400 italic leading-relaxed">{{ week.tip }}</p>
             </div>
 
@@ -160,12 +213,13 @@
                 <a href="/drill/{{ mode }}"
                    class="text-sm px-4 py-1.5 rounded-xl font-medium transition-colors
                    {% if mode == 'letters' %}bg-indigo-900/60 text-indigo-400 hover:bg-indigo-800/80
+                   {% elif mode == 'vowelfire' %}bg-purple-900/60 text-purple-400 hover:bg-purple-800/80
                    {% elif mode == 'words' %}bg-violet-900/60 text-violet-400 hover:bg-violet-800/80
                    {% elif mode == 'phrases' %}bg-sky-900/60 text-sky-400 hover:bg-sky-800/80
                    {% elif mode == 'consonants' %}bg-rose-900/60 text-rose-400 hover:bg-rose-800/80
                    {% elif mode == 'siddur' %}bg-teal-900/60 text-teal-400 hover:bg-teal-800/80
                    {% else %}bg-amber-900/60 text-amber-400 hover:bg-amber-800/80{% endif %}">
-                  {{ mode | capitalize }}
+                  {{ 'Vowels' if mode == 'letters' else ('Vowel Fire' if mode == 'vowelfire' else mode | capitalize) }}
                 </a>
                 {% endfor %}
               </div>
@@ -182,12 +236,30 @@
   <div>
     <h2 class="text-xs font-semibold text-gray-600 uppercase tracking-widest mb-3">Milestones</h2>
     <div class="bg-gray-900 rounded-2xl border border-gray-800 overflow-hidden">
-      {% set milestones = [
-        (2, "No thinking about letters"),
-        (4, "Can read Tehillim smoothly at slow, steady pace"),
-        (6, "Shema and Ashrei mostly fluid"),
-        (8, "Can keep up reasonably in weekday Shacharit"),
-      ] %}
+
+      {% if plan_weeks == 8 %}
+        {% set milestones = [
+          (2, "No hesitation on vowels — eyes keep moving"),
+          (4, "Full Siddur paragraph read smoothly without stopping"),
+          (6, "Shema and Ashrei read smoothly and continuously"),
+          (8, "Can keep up in weekday Shacharit at minyan pace"),
+        ] %}
+      {% elif plan_weeks == 12 %}
+        {% set milestones = [
+          (4,  "Letters and vowels firing automatically"),
+          (8,  "Shema, Ashrei, V'ahavta read as single continuous units"),
+          (10, "30 minutes continuous Siddur reading without anxiety"),
+          (12, "Minyan-level steadiness — confident weekday davening"),
+        ] %}
+      {% else %}
+        {% set milestones = [
+          (4,  "Full Siddur paragraph without stopping"),
+          (8,  "Siddur reading feels like reading, not decoding"),
+          (12, "Liturgical reading feels natural — sustained focus without effort"),
+          (16, "No anxiety, no hesitation — ready for consistent minyan participation"),
+        ] %}
+      {% endif %}
+
       {% for wk, text in milestones %}
       <div class="flex items-center gap-4 px-5 py-3.5 {% if not loop.last %}border-b border-gray-800/60{% endif %}">
         <span class="text-xs font-semibold px-2 py-0.5 rounded-lg shrink-0
@@ -203,12 +275,39 @@
           {{ text }}
         </span>
         {% if current_week > wk %}
-          <span class="text-emerald-500 text-sm shrink-0">✓</span>
+          <span class="text-emerald-500 text-sm shrink-0">&#10003;</span>
         {% elif current_week >= wk - 1 %}
-          <span class="text-indigo-500 text-sm shrink-0">→</span>
+          <span class="text-indigo-500 text-sm shrink-0">&#8594;</span>
         {% endif %}
       </div>
       {% endfor %}
+    </div>
+  </div>
+
+  <!-- Reading tips (collapsible) -->
+  <div>
+    <h2 class="text-xs font-semibold text-gray-600 uppercase tracking-widest mb-3">Reading Tips</h2>
+    <div class="bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden">
+      <details class="group">
+        <summary class="flex items-center justify-between gap-3 px-5 py-4 cursor-pointer list-none select-none">
+          <span class="text-sm font-medium text-gray-300">{{ reading_tips | length }} tips for faster progress</span>
+          <svg class="w-4 h-4 text-gray-700 transition-transform duration-200 group-open:rotate-180 shrink-0"
+               fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/>
+          </svg>
+        </summary>
+        <div class="px-5 pb-5 pt-2 border-t border-gray-800/60 space-y-3">
+          {% for tip in reading_tips %}
+          <div class="flex items-start gap-3">
+            <span class="text-xs font-bold text-gray-700 w-5 shrink-0 mt-0.5">{{ tip.n }}</span>
+            <div>
+              <p class="text-sm font-medium text-gray-300">{{ tip.title }}</p>
+              <p class="text-sm text-gray-500 mt-0.5 leading-relaxed">{{ tip.body }}</p>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </details>
     </div>
   </div>
 
@@ -216,7 +315,7 @@
   <div class="bg-gray-900 border border-gray-800 rounded-2xl p-5 text-sm text-gray-400 space-y-3">
     <p class="text-gray-200 font-semibold">Remember</p>
     <p><span class="text-gray-300">Minimum viable daily habit:</span> 20 minutes — no matter what.</p>
-    <p><span class="text-gray-300">On strong days:</span> 60 minutes.</p>
+    <p><span class="text-gray-300">On strong days:</span> {{ weekly_plan[0].daily_minutes }} minutes.</p>
     <p><span class="text-gray-300">On hard days:</span> 20 minutes and you win.</p>
     <p class="text-gray-600 pt-1 italic border-t border-gray-800">You are building identity here, not just skill.</p>
   </div>

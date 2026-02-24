@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="he" dir="rtl">
+<html lang="he" dir="ltr">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -45,15 +45,21 @@
   <nav class="bg-gray-900 border-b border-gray-800 px-4 py-3 shrink-0">
     <div class="max-w-2xl mx-auto flex items-center justify-between">
       <a href="/" class="flex items-center gap-2 text-lg font-semibold text-indigo-400 hover:text-indigo-300 transition-colors">
-        <span>🕍</span>
         <span class="hidden sm:inline">Hebrew Trainer</span>
       </a>
-      <div class="flex gap-5 text-sm">
+      <div class="flex gap-5 text-sm items-center">
         <a href="/" class="text-gray-400 hover:text-gray-100 transition-colors">Dashboard</a>
         <a href="/guide" class="text-gray-400 hover:text-gray-100 transition-colors">Plan</a>
-        <a href="/pronunciation" class="text-gray-400 hover:text-gray-100 transition-colors">Guide</a>
         <a href="/sessions" class="text-gray-400 hover:text-gray-100 transition-colors">Sessions</a>
+        <a href="/settings" class="text-gray-400 hover:text-gray-100 transition-colors">Settings</a>
+        {% if me and me.id == 1 %}
         <a href="/admin" class="text-gray-400 hover:text-gray-100 transition-colors">Admin</a>
+        {% endif %}
+        {% if me %}
+          <span class="text-gray-600">|</span>
+          <span class="text-gray-500 text-xs">{{ me.username }}</span>
+          <a href="/logout" class="text-gray-400 hover:text-red-400 transition-colors text-xs">Sign out</a>
+        {% endif %}
       </div>
     </div>
   </nav>
