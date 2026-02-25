@@ -156,7 +156,7 @@
         <span>Interval</span>
         <input id="auto-play-slider" type="range"
                min="{% if mode in ['letters', 'words'] %}1{% elif mode in ['phrases', 'prayer'] %}3{% else %}0.5{% endif %}"
-               max="{% if mode == 'letters' %}7{% elif mode == 'words' %}5{% elif mode in ['phrases', 'prayer'] %}15{% else %}1.5{% endif %}"
+               max="{% if mode == 'letters' %}10{% elif mode == 'words' %}5{% elif mode in ['phrases', 'prayer'] %}15{% else %}1.5{% endif %}"
                step="{% if mode in ['letters', 'words'] %}0.5{% elif mode in ['phrases', 'prayer'] %}1{% else %}0.1{% endif %}"
                value="{{ saved_interval }}"
                class="{% if mode == 'vowelfire' %}accent-purple-500{% elif mode == 'letters' %}accent-indigo-500{% elif mode == 'words' %}accent-violet-500{% else %}accent-rose-500{% endif %} w-40">
