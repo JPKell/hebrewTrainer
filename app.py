@@ -1106,7 +1106,6 @@ def login_required(f):
     @wraps(f)
     def decorated(*args, **kwargs):
         if current_user() is None:
-            flash("Please log in to continue.", "error")
             return redirect(url_for("login"))
         return f(*args, **kwargs)
     return decorated
@@ -1117,7 +1116,6 @@ def admin_required(f):
     def decorated(*args, **kwargs):
         u = current_user()
         if u is None:
-            flash("Please log in to continue.", "error")
             return redirect(url_for("login"))
         if u.id != 1:
             flash("Admin access required.", "error")
@@ -1324,6 +1322,12 @@ def dashboard():
         for mode, color, default_target in DRILL_META
     ]
 
+    recommended = current_week_plan.get("recommended_modes", [])
+    day_complete = bool(recommended) and all(
+        today_by_mode_secs.get(m, 0) >= plan_targets.get(m, 1) * 60
+        for m in recommended
+    )
+
     return render_template(
         "dashboard.html",
         stats=stats,
@@ -1333,6 +1337,7 @@ def dashboard():
         current_week_plan=current_week_plan,
         start_date=start_date,
         today_drill_rows=today_drill_rows,
+        day_complete=day_complete,
     )
 
 
