@@ -66,6 +66,29 @@ function updateTargetUI() {
 
 function el(id) { return document.getElementById(id); }
 
+// ── Target-reached chime (Web Audio API) ─────────────────────────────────────
+function playTargetChime() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const notes = [523.25, 659.25, 783.99]; // C5 – E5 – G5
+    notes.forEach((freq, i) => {
+      const osc  = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.type = 'sine';
+      osc.frequency.value = freq;
+      const t = ctx.currentTime + i * 0.18;
+      gain.gain.setValueAtTime(0, t);
+      gain.gain.linearRampToValueAtTime(0.18, t + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.7);
+      osc.start(t);
+      osc.stop(t + 0.7);
+    });
+    setTimeout(() => ctx.close(), 1500);
+  } catch (_) {}
+}
+
 // ── Timer controls ────────────────────────────────────────────────────────────
 function startTimer() {
   if (isRunning) return;
@@ -80,6 +103,7 @@ function startTimer() {
 
   timerInterval = setInterval(() => {
     totalSeconds++;
+    if (targetSeconds && totalSeconds === targetSeconds) playTargetChime();
     updateDisplay();
   }, 1000);
 }
