@@ -43,7 +43,7 @@
       <div class="flex items-center justify-between text-xs mb-1.5">
         <span class="text-gray-600 uppercase tracking-wide">Target</span>
         <span id="target-label" class="font-medium tabular-nums text-gray-500">
-          {% if target_satisfied %}✓ Target reached{% else %}{{ target_minutes }} min remaining{% endif %}
+          {% if target_satisfied %}✓ Target reached{% else %}{% set rm = target_remaining_seconds %}{% if rm >= 60 %}{{ rm // 60 }}m {{ rm % 60 }}s{% else %}{{ rm }}s{% endif %} remaining{% endif %}
         </span>
       </div>
       <div class="bg-gray-800 rounded-full h-1.5 overflow-hidden">
@@ -264,7 +264,7 @@
 {% block scripts %}
 <script>
   document.addEventListener('DOMContentLoaded', () => {
-    initDrill('{{ mode }}', {{ target_minutes }}, {{ target_satisfied | tojson }});
+    initDrill('{{ mode }}', {{ target_remaining_seconds }}, {{ target_satisfied | tojson }});
   });
 </script>
 {% endblock %}

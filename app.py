@@ -1304,18 +1304,21 @@ def dashboard():
     today = today_local()
     today_sessions = PracticeSession.query.filter_by(user_id=user.id, date=today).all()
     today_by_mode = {}
+    today_by_mode_secs = {}
     for s in today_sessions:
         today_by_mode[s.mode] = today_by_mode.get(s.mode, 0) + s.minutes
+        today_by_mode_secs[s.mode] = today_by_mode_secs.get(s.mode, 0) + s.duration_seconds
 
     plan_targets = _user_targets(user, current_week_plan)
     today_drill_rows = [
         {
-            "mode":   mode,
-            "color":  color,
-            "done":   today_by_mode.get(mode, 0),
-            "target": plan_targets.get(mode, default_target),
-            "pct":    min(100, round(
-                today_by_mode.get(mode, 0) / plan_targets.get(mode, default_target) * 100
+            "mode":      mode,
+            "color":     color,
+            "done":      today_by_mode.get(mode, 0),
+            "done_secs": today_by_mode_secs.get(mode, 0),
+            "target":    plan_targets.get(mode, default_target),
+            "pct":       min(100, round(
+                today_by_mode_secs.get(mode, 0) / (plan_targets.get(mode, default_target) * 60) * 100
             )),
         }
         for mode, color, default_target in DRILL_META
@@ -1356,18 +1359,20 @@ def drill(mode):
     fallback = int(_re.search(r'\d+', recommended_time).group()) if _re.search(r'\d+', recommended_time) else 15
     target_minutes = targets.get(mode, fallback)
     today = today_local()
-    today_done_minutes = (
-        db.session.query(db.func.coalesce(db.func.sum(PracticeSession.minutes), 0))
-        .filter_by(user_id=user.id, date=today, mode=mode)
-        .scalar()
-        or 0
-    )
-    remaining_minutes = max(0, target_minutes - int(today_done_minutes))
-    target_satisfied = int(today_done_minutes) >= target_minutes
+    today_mode_sessions = PracticeSession.query.filter_by(
+        user_id=user.id, date=today, mode=mode
+    ).all()
+    today_done_seconds = sum(s.duration_seconds for s in today_mode_sessions)
+    today_done_minutes = sum(s.minutes for s in today_mode_sessions)
+    target_total_seconds = target_minutes * 60
+    remaining_seconds = max(0, target_total_seconds - today_done_seconds)
+    remaining_minutes = max(0, target_minutes - today_done_minutes)
+    target_satisfied = today_done_seconds >= target_total_seconds
     saved_interval = getattr(user, f'interval_{mode}', None)
     return render_template("drill.html", mode=mode, content=content,
                            recommended_time=recommended_time,
                            target_minutes=remaining_minutes,
+                           target_remaining_seconds=remaining_seconds,
                            target_satisfied=target_satisfied,
                            saved_interval=saved_interval,
                            vowels=VOWELS if mode == 'letters' else [],

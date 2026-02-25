@@ -245,9 +245,10 @@ function nextItem() {
   } else {
     showItem(currentIndex + 1);
   }
+  resetAutoPlayTimer();
 }
 
-function prevItem() { showItem(currentIndex - 1); }
+function prevItem() { showItem(currentIndex - 1); resetAutoPlayTimer(); }
 
 function shuffleItems() {
   const container = el('drill-items-container');
@@ -592,6 +593,12 @@ function stopAutoPlay() {
   updateAutoPlayUI(false);
 }
 
+function resetAutoPlayTimer() {
+  if (!autoPlayEnabled) return;
+  if (autoPlayIntervalId) clearInterval(autoPlayIntervalId);
+  autoPlayIntervalId = setInterval(showRandomItem, autoPlayDelayMs);
+}
+
 function toggleAutoPlay() {
   if (autoPlayEnabled) stopAutoPlay();
   else startAutoPlay();
@@ -705,10 +712,10 @@ function hideVowelGuide() {
   }
 }
 
-function initDrill(mode, targetMinutes) {
+function initDrill(mode, targetRemainingSeconds) {
   currentMode = mode;
   targetSatisfied = arguments.length > 2 ? !!arguments[2] : false;
-  targetSeconds = (targetMinutes && targetMinutes > 0) ? targetMinutes * 60 : 0;
+  targetSeconds = (targetRemainingSeconds && targetRemainingSeconds > 0) ? targetRemainingSeconds : 0;
   updateDisplay();
   updateTargetUI();
 

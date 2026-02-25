@@ -61,10 +61,10 @@
     <div class="border-t border-gray-800/70 pt-4 mb-4">
       <div class="flex items-center justify-between mb-3">
         <span class="text-xs font-semibold text-gray-600 uppercase tracking-widest">Today's Goal</span>
-        {% set week_today = today_drill_rows | selectattr('mode', 'in', current_week_plan.recommended_modes) | sum(attribute='done') %}
+        {% set week_today_secs = today_drill_rows | selectattr('mode', 'in', current_week_plan.recommended_modes) | sum(attribute='done_secs') %}
         <span class="text-xs font-bold tabular-nums
-          {% if week_today > 0 %}text-gray-300{% else %}text-gray-600{% endif %}">
-          {{ week_today }} min
+          {% if week_today_secs > 0 %}text-gray-300{% else %}text-gray-600{% endif %}">
+          {% if week_today_secs == 0 %}0m{% elif week_today_secs < 60 %}{{ week_today_secs }}s{% elif week_today_secs % 60 == 0 %}{{ week_today_secs // 60 }}m{% else %}{{ week_today_secs // 60 }}m {{ week_today_secs % 60 }}s{% endif %}
         </span>
       </div>
       <div class="space-y-2">
@@ -87,11 +87,11 @@
               style="width: {{ row.pct }}%">
             </div>
           </div>
-          <span class="text-xs tabular-nums w-14 text-right
-            {% if row.done >= row.target %}text-emerald-400 font-semibold
-            {% elif row.done > 0 %}text-gray-500
+          <span class="text-xs tabular-nums w-20 text-right
+            {% if row.done_secs >= row.target * 60 %}text-emerald-400 font-semibold
+            {% elif row.done_secs > 0 %}text-gray-500
             {% else %}text-gray-700{% endif %}">
-            {{ row.done }}/{{ row.target }}m
+            {% if row.done_secs == 0 %}0{% elif row.done_secs < 60 %}{{ row.done_secs }}s{% elif row.done_secs % 60 == 0 %}{{ row.done_secs // 60 }}m{% else %}{{ row.done_secs // 60 }}m {{ row.done_secs % 60 }}s{% endif %}/{{ row.target }}m
           </span>
         </div>
         {% endif %}
