@@ -203,9 +203,9 @@ function updateTranslitBox(hebrewText) {
   if (!hebrewText || !hebrewText.trim()) { tBox.classList.add('hidden'); return; }
   const translit = transliterate(hebrewText.trim());
   const hasContent = translit.replace(/[\u2019\s]/g, '').length > 0;
-  if (!hasContent) { tBox.classList.add('hidden'); return; }
+  if (!hasContent && currentMode !== 'consonants') { tBox.classList.add('hidden'); return; }
   if (tHeb) tHeb.textContent = hebrewText.trim();
-  if (tTxt) tTxt.textContent = translit;
+  if (tTxt) tTxt.textContent = hasContent ? translit : '(silent)';
   tBox.classList.remove('hidden');
 }
 
