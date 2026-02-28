@@ -1072,6 +1072,52 @@ READING_TIPS = [
      "body": "You will plateau. Then suddenly improve. Stay steady."},
 ]
 
+# Per-mode drill tips — shown on the drill page to reinforce best practice
+DRILL_TIPS = {
+    "consonants": [
+        "Name the letter instantly — don't sound it out. Automatic recognition is the goal.",
+        "Keep your eyes moving forward. Never go back to a missed letter.",
+        "Read slightly louder than comfortable — projection builds rhythm and confidence.",
+        "Speed over accuracy at first. Fluency comes from repetition, not hesitation.",
+    ],
+    "letters": [
+        "Say the vowel sound immediately — don't think, just react.",
+        "Don't translate. Train eyes to decode, not understand.",
+        "Blend consonant + vowel into one instant syllable. No gap between them.",
+        "If you freeze on a vowel, say it slowly once, then move on immediately.",
+    ],
+    "vowelfire": [
+        "Lower the interval until it feels uncomfortable — that edge is where fluency is built.",
+        "Eyes one syllable ahead of your mouth. Build that reading buffer.",
+        "If overwhelmed: 5 minutes Rapid-Fire Vowels, then 10 minutes Siddur. That still counts.",
+        "Speed and accuracy together come after speed alone. Chase the pace first.",
+    ],
+    "words": [
+        "Train in chunks — aim to see 2–3 words at once, not one at a time.",
+        "Eyes always one word ahead of your mouth. Practice that gap deliberately.",
+        "Don't stop to verify. Push through and self-correct on the move.",
+        "Mixing ב / בּ or פ / פּ? Slow down for one pass, then speed back up.",
+    ],
+    "phrases": [
+        "Never stop mid-phrase. Flow over perfection, every time.",
+        "Read 3–5 words as a single unit — phrase recognition, not word-by-word.",
+        "Your goal is sustained calm reading, not flawless pronunciation.",
+        "Don't break rhythm even when you make a mistake. Keep moving.",
+    ],
+    "prayer": [
+        "The Siddur is the goal — every drill is warm-up for it.",
+        "Don't break rhythm even when you make a mistake. Flow over perfection.",
+        "You are building identity here, not just skill. Show up even on hard days.",
+        "Measure endurance, not perfection. Sustained calm reading is the goal.",
+    ],
+    "siddur": [
+        "Eyes and mouth only — no translation, no pausing to look things up.",
+        "Push through hesitations. Flow over perfection — keep the rhythm.",
+        "End every session here. The Siddur is the anchor for everything else.",
+        "Aim for at least 5 minutes of continuous reading. Endurance before speed.",
+    ],
+}
+
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -1374,6 +1420,9 @@ def drill(mode):
     remaining_minutes = max(0, target_minutes - today_done_minutes)
     target_satisfied = today_done_seconds >= target_total_seconds
     saved_interval = getattr(user, f'interval_{mode}', None)
+    drill_tips = DRILL_TIPS.get(mode, [])
+    drill_tip = random.choice(drill_tips) if drill_tips else ""
+    week_tip = week_plan.get("tip", "")
     return render_template("drill.html", mode=mode, content=content,
                            recommended_time=recommended_time,
                            target_minutes=remaining_minutes,
@@ -1381,7 +1430,9 @@ def drill(mode):
                            target_satisfied=target_satisfied,
                            saved_interval=saved_interval,
                            vowels=VOWELS if mode == 'letters' else [],
-                           consonants=CONSONANTS if mode == 'consonants' else [])
+                           consonants=CONSONANTS if mode == 'consonants' else [],
+                           drill_tip=drill_tip,
+                           week_tip=week_tip)
 
 
 @app.route("/api/save_interval", methods=["POST"])

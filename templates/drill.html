@@ -103,6 +103,45 @@
        class="hidden mt-4 text-center text-emerald-400 text-sm font-medium"></p>
   </div>
 
+  <!-- Contextual tip card -->
+  {% if drill_tip or week_tip %}
+  <div id="drill-tip-card"
+       class="relative rounded-2xl border px-5 py-4 text-sm
+       {% if mode == 'consonants' %}bg-rose-950/40 border-rose-800/50
+       {% elif mode == 'letters' %}bg-indigo-950/40 border-indigo-800/50
+       {% elif mode == 'vowelfire' %}bg-purple-950/40 border-purple-800/50
+       {% elif mode == 'words' %}bg-violet-950/40 border-violet-800/50
+       {% elif mode == 'phrases' %}bg-sky-950/40 border-sky-800/50
+       {% elif mode == 'siddur' %}bg-teal-950/40 border-teal-800/50
+       {% else %}bg-amber-950/40 border-amber-800/50{% endif %}">
+
+    <button onclick="document.getElementById('drill-tip-card').remove()"
+            class="absolute top-3 right-3 text-gray-700 hover:text-gray-400 transition-colors text-base leading-none"
+            title="Dismiss">✕</button>
+
+    {% if drill_tip %}
+    <div class="flex items-start gap-2.5 {% if week_tip %}mb-3{% endif %}">
+      <span class="shrink-0 text-base leading-snug">💡</span>
+      <p class="{% if mode == 'consonants' %}text-rose-200
+                {% elif mode == 'letters' %}text-indigo-200
+                {% elif mode == 'vowelfire' %}text-purple-200
+                {% elif mode == 'words' %}text-violet-200
+                {% elif mode == 'phrases' %}text-sky-200
+                {% elif mode == 'siddur' %}text-teal-200
+                {% else %}text-amber-200{% endif %} leading-snug">{{ drill_tip }}</p>
+    </div>
+    {% endif %}
+
+    {% if week_tip %}
+    <div class="flex items-start gap-2.5 {% if drill_tip %}border-t border-gray-800/60 pt-3{% endif %}">
+      <span class="shrink-0 text-xs font-semibold text-gray-600 uppercase tracking-wide mt-0.5 w-14 leading-snug">Plan</span>
+      <p class="text-gray-400 italic leading-snug">{{ week_tip }}</p>
+    </div>
+    {% endif %}
+
+  </div>
+  {% endif %}
+
   {% if mode == 'siddur' %}
   <!-- Siddur: timer-only instructions -->
   <div class="bg-gray-900 rounded-2xl border border-gray-800 p-6 space-y-5">
